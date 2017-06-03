@@ -1,0 +1,31 @@
+---
+layout: page
+---
+
+{% unless page.content == '' %}
+  <p>{{ page.content }}</p>
+{% endunless %}
+
+{% unless site.categories[page.category] %}
+  <p>No posts in this category at this time.</p>
+{% endunless %}
+
+<ul class="post-list">
+  {% for post in site.categories[page.category] %}
+    <li>
+      <h2 class="post-title">
+        <a href="{{ post.url | prepend: site.baseurl }}" class="post-link">
+          {{ post.title }}
+        </a>
+      </h2>
+      {% if post.subtitle %}
+        <h3 class="post-subtitle">
+          {{ post.subtitle }}
+        </h3>
+      {% endif %}
+      <p class="post-meta">
+        {{ post.date | date: "%B %-d, %Y" }}
+      </p>
+    </li>
+  {% endfor %}
+</ul>

@@ -3,7 +3,7 @@ layout: post
 title: 'First Post'
 date: 2012-04-08 16:18
 comments: true
-categories: 
+categories: misc
 ---
 
 **My Blog Will Stay Here Later on.**

@@ -33,4 +33,4 @@ exclude:
   - Gemfile
   - Gemfile.lock
 disqus:
-    shortname: shurlin
+  shortname: shurlin

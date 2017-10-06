@@ -56,6 +56,7 @@ mysqldump -u username -p database_name > database_name.sql
 ```
 + Install [pgloader](https://github.com/dimitri/pgloader) (>= 3.4.1)
 + Create command file migration.load
+
 ```
 LOAD DATABASE
   FROM mysql://user:pass@localhost/database_name

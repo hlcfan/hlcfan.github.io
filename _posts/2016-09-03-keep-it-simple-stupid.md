@@ -121,7 +121,7 @@ Whow, that looks neat.
 
 ### Over-engineering
 
-As for this section, I dont have any code sample, but it happens in one of my projects tho. After that, I would tell meself, stop over-engineering next time. It just costs too much, may lead to effort to maintain and less understandable code.
+As for this section, I don't have any code sample, but it happens in one of my projects tho. After that, I would tell meself, stop over-engineering next time. It just costs too much, may lead to effort to maintain and less understandable code.
 
 There're two kinds of over-engineering, one is same effect/purpose as before. You just switch to complex way to deal with it, this is the worst.
 

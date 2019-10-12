@@ -1,5 +1,5 @@
 ---
-layout: page
+layout: post
 title: About
 permalink: /about/
 ---
@@ -18,6 +18,7 @@ It's What You Can Contribute
 Knowledge & Ability
 --------------------
 + Ruby (Rails)
++ Golang
 + Objective-C
 + MySQL/MongoDB
 + HTML/CSS/JavaScript
@@ -26,7 +27,7 @@ Knowledge & Ability
 + ReactJS
 + Elasticsearch
 
-Experiences
+Stories
 --------------------
 + 2010.04 大连东软信息学院格致杯演讲比赛获得优秀奖。
 + 2010.04 大连东软信息学院格致杯演讲比赛特殊贡献奖。
@@ -40,7 +41,9 @@ Experiences
 + 2012.07 参加豌豆荚 HackDay 总分排名第二。
 + 2012.09 - 2014.03 在推酷 http://tuicool.com， 做 Rails 和 iOS 开发。
 + 2013.07 毕业。
-+ **2014.05 Software Engineer @ActiveNetwork**
++ 2014.05 Software Engineer @ActiveNetwork
++ 2019.04 Software Engineer @Honestbee
++ 2019.09 Software Engieer @Wework
 
 Others
 --------------------
@@ -48,7 +51,7 @@ Others
 + 深度互联网用户。
 + 爱运动（羽毛球，网球，游泳，乒乓，篮球）也爱看书。
 + 性格爽朗。
-+ 做过N年售货员经验。:D
++ 做过 N 年售货员经验。:D
 
 What I've Done
 --------------------

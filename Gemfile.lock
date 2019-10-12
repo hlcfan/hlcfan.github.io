@@ -1,12 +1,3 @@
-GIT
-  remote: https://github.com/hlcfan/tale.git
-  revision: 6bad09c166ebef11a55d83fec3c548d54a3aae55
-  specs:
-    tale (0.1.7)
-      jekyll (~> 4.0)
-      jekyll-feed (~> 0.12.0)
-      jekyll-seo-tag (~> 2.6.0)
-
 GEM
   remote: https://rubygems.org/
   specs:
@@ -54,6 +45,10 @@ GEM
       rb-fsevent (~> 0.10, >= 0.10.3)
       rb-inotify (~> 0.9, >= 0.9.10)
     mercenary (0.3.6)
+    minima (2.5.1)
+      jekyll (>= 3.5, < 5.0)
+      jekyll-feed (~> 0.9)
+      jekyll-seo-tag (~> 2.1)
     pathutil (0.16.2)
       forwardable-extended (~> 2.6)
     public_suffix (4.0.1)
@@ -73,7 +68,7 @@ PLATFORMS
 
 DEPENDENCIES
   jekyll (~> 4.0)
-  tale (= 0.1.7)!
+  minima (~> 2.5)
 
 RUBY VERSION
    ruby 2.6.4p104

@@ -17,9 +17,6 @@ title: Alex S
 email: hlcfan.yan@gmail.com
 description: > # this means to ignore newlines until "baseurl:"
 
-author:
-  name:         Alex S
-  email:        hlcfan.yan@gmail.com
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://hlcfan.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: hlcfan
@@ -29,7 +26,7 @@ permalink: /:title.html
 
 # Build settings
 markdown: kramdown
-theme: tale
+theme: minima
 gems:
   - jekyll-feed
 exclude:

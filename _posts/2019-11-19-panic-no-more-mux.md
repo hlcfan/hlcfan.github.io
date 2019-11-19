@@ -47,17 +47,17 @@ what `recover` come to play. Recover is a built-in function that regains control
 of a panicking goroutine, and it is only useful inside deferred functions. So
 the test would be like
 ```golang
-	It("Panics without the middleware", func() {
-		req := httptest.NewRequest("GET", "/test", nil)
-		w := httptest.NewRecorder()
-		defer func() {
-			if r := recover(); r != nil {
-				fmt.Println("Recovered from panic", r)
-			}
-		}()
-		http.HandlerFunc(handler).ServeHTTP(w, req)
+It("Panics without the middleware", func() {
+    req := httptest.NewRequest("GET", "/test", nil)
+    w := httptest.NewRecorder()
+    defer func() {
+        if r := recover(); r != nil {
+            fmt.Println("Recovered from panic", r)
+        }
+    }()
+    http.HandlerFunc(handler).ServeHTTP(w, req)
 
-		log.Fatal("No panic")
-	})
+    log.Fatal("No panic")
+})
 ```
 

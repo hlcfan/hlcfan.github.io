@@ -96,20 +96,21 @@ func metricMiddleware(router *mux.Router, next http.Handler) http.Handler {
         // Call the next handler, which can be another middleware in the chain, or the final handler.
         next.ServeHTTP(w, &writer)
         duration := time.Since(now)
-        var match mux.RouteMatch
-        go func(duration time.Duration) {
-            if router.Match(r, &match) {
-                routeName := match.Route.GetName()
-                fmt.Println("Route: ", routeName, "Duration: ", duration)
-            }
-        }(duration)
-
-        go func(httpStatus int) {
-            fmt.Println("Reponse status: ", httpStatus)
-        }(writer.status)
+        defer func() {
+            go func(duration time.Duration, statusCode int) {
+                var match mux.RouteMatch
+                if middleware.Router.Match(r, &match) {
+                    routeName := match.Route.GetName()
+                    fmt.Println("Route: ", routeName, "Status", statusCode, "Duration: ", duration)
+                }
+            }(httpDuration, sw.status)
+        }()
     })
 }
 ```
+
+Note we defer the goroutine call, that's because the deferred functions will be
+always executed. So if something goes wrong, our deferred functions still work.
 
 Through our customized `ResponseWriter`, we're able to extract the info we need.
 Yay.

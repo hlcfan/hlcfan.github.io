@@ -46,7 +46,14 @@ you'll know if you're allocating too many objects or leaking objects. Larger
 memory usage could cause longer GC duration.
 
 ```
+# Total memory
 sum(container_memory_usage_bytes{namespace="$namespace",cluster=~"$cluster",pod_name=~"$appname.*"}) by (pod_name)
+
+# Heap memory
+go_memstats_heap_alloc_bytes{namespace="$namespace",cluster=~"$cluster",service=~"$appname.*"}
+
+# Stack memory
+go_memstats_stack_inuse_bytes{namespace="$namespace",cluster=~"$cluster",service=~"$appname.*"}
 ```
 
 ### Goroutines

@@ -8,11 +8,9 @@ It's What You Can Contribute
 --------------------
 
 + Name: Alex Shi
-+ City: Xi'an, China
++ City: Singapore
 + Email: hlcfan.yan#gmail.com
 + Github: [hlcfan](https://github.com/hlcfan)
-+ Weibo: [@hlcfan](http://weibo.com/hlcfan)
-+ Twitter: [@hlcfan](http://twitter.com/hlcfan)
 + LinkedIn: [Alex Shi](https://www.linkedin.com/in/hlcfan/)
 
 Knowledge & Ability
@@ -58,7 +56,7 @@ What I've Done
 + 2012 [推酷web 版](http://www.tuicool.com/)
 + 2013 [推酷 iOS 版](https://itunes.apple.com/us/app/tui-ku/id665799724?ls=1&mt=8)
 + 2013 [Peper (App)](https://itunes.apple.com/us/app/peper/id786444025?ls=1&mt=8) - 心灵旅程也需要记录
-+ 2016 [Pokrex](https://pokrex.com) - Online pointing poker tool
++ 2016 [AgileMana](https://agilemana.com) - Online pointing poker tool
 
 ###### --- old stuff ---
 

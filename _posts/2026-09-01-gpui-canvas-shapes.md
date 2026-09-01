@@ -61,10 +61,9 @@ See the first shape in the [Example](#Example) below.
 
 ## Rectangular
 
-To draw a rectangular, we need to draw 4 lines. One thing to note, for the last line, to make sure the 2 lines are perfectly closed, use `close()` to join the 2 lines.
+To draw a rectangular, we need to draw 3 lines. Why not 4 lines? For the last line, to make sure it connects with first line perfectly, use `close()` to join the 2 lines.
 
 ```rust
-// Rectangular
 line.move_to(point(
   bounds.left() + px(16.),
   bounds.center().y + px(40.0),

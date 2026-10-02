@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="300" viewBox="0 0 900 300" role="img" aria-labelledby="title desc">
+  <title id="title">Animation progress shown as a car on a road</title>
+  <desc id="desc">A car is 30 percent of the way along a road from 0 percent to 100 percent.</desc>
+  <defs>
+    <style>
+      text { font-family: sans-serif; fill: #1f2937; }
+      .endpoint { font-size: 20px; font-weight: bold; }
+      .progress { font-size: 18px; font-weight: bold; }
+    </style>
+  </defs>
+
+  <rect width="900" height="300" fill="#fff"/>
+
+  <!-- Road -->
+  <rect x="90" y="112" width="720" height="76" rx="16" fill="#374151"/>
+  <line x1="112" y1="150" x2="788" y2="150" stroke="#f9fafb" stroke-width="4" stroke-dasharray="22 16"/>
+  <line x1="90" y1="106" x2="90" y2="194" stroke="#111827" stroke-width="4"/>
+  <line x1="810" y1="106" x2="810" y2="194" stroke="#111827" stroke-width="4"/>
+
+  <!-- Position: 90 + 30% of 720 = 306 -->
+  <g transform="translate(306 0)">
+    <line x1="0" y1="84" x2="0" y2="112" stroke="#2563eb" stroke-width="3"/>
+    <!-- Simple car silhouette -->
+    <path d="M-48 132 L-40 119 Q-36 113 -27 113 L20 113 Q28 113 33 120 L45 132 Q51 134 51 141 L51 159 L-52 159 L-52 141 Q-52 135 -48 132 Z" fill="#2563eb" stroke="#1d4ed8" stroke-width="2"/>
+    <path d="M-27 118 L-17 118 L-17 131 L-39 131 Z M-10 118 L18 118 Q23 118 27 124 L33 131 L-10 131 Z" fill="#dbeafe"/>
+    <circle cx="-31" cy="159" r="9" fill="#111827"/>
+    <circle cx="31" cy="159" r="9" fill="#111827"/>
+    <circle cx="-31" cy="159" r="3" fill="#d1d5db"/>
+    <circle cx="31" cy="159" r="3" fill="#d1d5db"/>
+    <text x="0" y="232" text-anchor="middle" class="progress">30%</text>
+    <line x1="0" y1="188" x2="0" y2="207" stroke="#2563eb" stroke-width="2" stroke-dasharray="4 4"/>
+  </g>
+
+  <text x="90" y="232" text-anchor="middle" class="endpoint">0%</text>
+  <text x="810" y="232" text-anchor="middle" class="endpoint">100%</text>
+</svg>

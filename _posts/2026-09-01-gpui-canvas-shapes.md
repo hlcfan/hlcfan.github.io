@@ -16,7 +16,7 @@ By right, the progress bar should respect the pane's top corner radius. I tried 
 
 This leads to this article, in which I'll share how to use `gpui`'s canvas API to draw basic shapes.
 
-The [canvas<T>()](https://docs.rs/gpui/0.2.2/gpui/fn.canvas.html) API takes in a `prepaint` and `paint` function implementations. This is exactly how `gpui` draw the UI.
+The [`canvas<T>()`](https://docs.rs/gpui/0.2.2/gpui/fn.canvas.html) API takes in a `prepaint` and `paint` function implementations. This is exactly how `gpui` draw the UI.
 
 ```rust
 pub fn canvas<T>(
@@ -167,4 +167,4 @@ This is an example of the shapes from the above code snippets.
 
 ## What else
 
-Now we know how to draw an arc, we can draw a spinner loading icon together with `with_animation` function. We just need to calculate the start point and endpoint position based on the `delta` from the `animator` parameter in `with_animation`.
+Now we know how to draw an arc, we can draw a spinner loading icon together with `with_animation` function. We just need to calculate the start point and endpoint position based on the `progress` from the `animator` parameter in `with_animation`.

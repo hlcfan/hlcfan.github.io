@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Drawing Loading Spinner with GPUI"
+title: "Draw and Animate Loading Spinner with GPUI"
 date: 2026-10-02 00:00
 comments: true
 categories: tech

@@ -6,6 +6,9 @@ comments: true
 categories: tech
 ---
 
+*This series of articles shares the learnings while I'm building [Beam](https://github.com/hlcfan/beam) - A native
+GUI HTTP client written in Rust*
+
 When I was working on [Beam](https://github.com/hlcfan/beam) - A native GUI HTTP client written in Rust based on `gpui`, it renders an animated progress bar to indicate the request is sending. Initially, I render an animated `div` via `with_animation()`, however the progress bar spans over the response pane with square corners, it visually obsecure the pane's rounded top corners. See
 
 <img src="/assets/images/2026-09-01-corner-with-div.png" alt="corner with div" style="zoom:50%;" />

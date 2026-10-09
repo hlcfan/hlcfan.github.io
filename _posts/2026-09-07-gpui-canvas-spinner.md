@@ -5,6 +5,10 @@ date: 2026-10-02 00:00
 comments: true
 categories: tech
 ---
+
+*This series of articles shares the learnings while I'm building [Beam](https://github.com/hlcfan/beam) - A native
+GUI HTTP client written in Rust*
+
 In the last post [Drawing Basic Shapes with GPUI
 Canvas](/gpui-canvas-shapes.html) I shared about the gpui's Canvas APIs with the
 usages, and drew a few basic shapes - line, rectangular, arc and circle. In the

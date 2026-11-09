@@ -245,7 +245,7 @@ async function clickPart(page, name) {
   await page.mouse.click(p.x, p.y);
 }
 
-test("lamp toggles, the note shows the now card, the floppy goes to GitHub", async ({ page }) => {
+test("lamp toggles, the floppy goes to GitHub", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("desk.test", "1"));
   await page.route("https://github.com/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>gh</title>" }));
   await page.goto("/");
@@ -256,11 +256,6 @@ test("lamp toggles, the note shows the now card, the floppy goes to GitHub", asy
   await expect(page.locator("html[data-lamp=on]")).toHaveCount(1);
   await clickPart(page, "lamp");
   await expect(page.locator("html[data-lamp=off]")).toHaveCount(1);
-
-  await clickPart(page, "note");
-  await expect(page.locator(".now-card")).toContainText("Now:");
-  await page.locator(".now-card").click();
-  await expect(page.locator(".now-card")).toHaveCount(0);
 
   await clickPart(page, "floppy");
   await page.waitForURL("https://github.com/hlcfan", { timeout: 5000 });

@@ -41,7 +41,6 @@ export function createScene(canvas, { onFatal = () => {}, reducedMotion = false 
     screen: parts.screen,
     lamp: parts.lamp,
     floppy: parts.floppy,
-    note: parts.note,
   });
 
   scene.updateMatrixWorld(true);

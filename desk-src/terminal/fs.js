@@ -11,8 +11,6 @@ const ABOUT = [
 
 const PLAN = ["Plan:", "  - ship the boring thing first", "  - write it down", "  - turn it off and on again"].join("\n");
 
-export const NOW = ["Now:", "  - rebuilding this blog as a desk", "  - writing Go and Rust at work", "  - reading about old computers"].join("\n");
-
 export const FORTUNES = [
   "It works on my machine.",
   "There are two hard problems: cache invalidation, naming things, and off-by-one errors.",
@@ -29,7 +27,6 @@ export function createFs({ posts = [], links = {} } = {}) {
     home: dir({
       alex: dir({
         "about.txt": file(ABOUT),
-        "now.txt": file(NOW),
         ".plan": file(PLAN),
         posts: dir(postFiles),
         links: dir({

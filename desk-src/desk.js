@@ -14,7 +14,6 @@ import { loadFont } from "./screen/font.js";
 import { LAYOUTS, pickLayout } from "./screen/layout.js";
 import { createScreenCanvas, uploadBands } from "./screen/screen-canvas.js";
 import { THEMES } from "./screen/themes.js";
-import { NOW } from "./terminal/fs.js";
 import { createSession } from "./terminal/session.js";
 import { createTerminal } from "./terminal/terminal.js";
 
@@ -286,7 +285,6 @@ export async function startDesk(canvas, { onFatal }) {
     if (isBooting()) return void power.skip();
     if (name === "lamp") return toggleLamp();
     if (name === "floppy") return insertFloppy();
-    if (name === "note") return showNote();
     if (power.state !== S.READY) return;
     if (name === "screen") {
       if (!focus) enterFocus();
@@ -299,7 +297,7 @@ export async function startDesk(canvas, { onFatal }) {
   function onHover(name) {
     hover = name;
     refreshHighlight();
-    const clickable = ["power-button", "lamp", "floppy", "note"].includes(name) || (name === "screen" && power.state === S.READY && !focus);
+    const clickable = ["power-button", "lamp", "floppy"].includes(name) || (name === "screen" && power.state === S.READY && !focus);
     scene.setCursor(clickable ? "pointer" : "");
   }
 
@@ -415,24 +413,6 @@ export async function startDesk(canvas, { onFatal }) {
       inserting = null;
       location.assign(GITHUB_URL);
     }
-  }
-
-  function showNote() {
-    const existing = document.getElementById("now-card");
-    if (existing) return existing.remove();
-    const card = document.createElement("div");
-    card.id = "now-card";
-    card.className = "now-card";
-    card.setAttribute("role", "dialog");
-    card.setAttribute("aria-label", "Now");
-    card.tabIndex = -1;
-    const pre = document.createElement("pre");
-    pre.textContent = NOW;
-    card.append(pre);
-    card.addEventListener("click", () => card.remove());
-    card.addEventListener("keydown", (e) => { if (e.key === "Escape") card.remove(); });
-    document.body.append(card);
-    card.focus();
   }
 
   // ---- page controls -----------------------------------------------------

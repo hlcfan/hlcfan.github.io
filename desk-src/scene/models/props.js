@@ -1,4 +1,4 @@
-// Desk props: lamp, mug, floppy, sticky note, wall clock, keyboard, mouse,
+// Desk props: lamp, mug, floppy, wall clock, keyboard, mouse,
 // speakers, CD-R in a paper sleeve. Built from boxes and canvas textures.
 import {
   AdditiveBlending, BoxGeometry, CircleGeometry, CylinderGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial,
@@ -18,22 +18,19 @@ export function buildProps() {
   const floppy = buildFloppy();
   floppy.position.set(46, 0.4, 36);
   floppy.rotation.y = -0.35;
-  const note = buildNote();
-  note.position.set(-34, 0.45, 30);
-  note.rotation.y = 0.25;
   const clock = buildClock();
   clock.group.position.set(74, 38, -69);
   const wall = new Mesh(new PlaneGeometry(420, 180), new MeshStandardMaterial({ color: 0x1b1814, roughness: 0.95 }));
   wall.position.set(0, 60, -70);
 
   group.add(
-    wall, lamp.group, mug.group, floppy, note, clock.group,
+    wall, lamp.group, mug.group, floppy, clock.group,
     buildKeyboard(), buildMouse(), buildSpeaker(-33), buildSpeaker(33), buildSleeve(),
   );
 
   group.userData.parts = {
     lamp: lamp.group, lampBulb: lamp.bulb, lampHead: lamp.head, mugSteam: mug.steam,
-    floppy, note, clock,
+    floppy, clock,
   };
   return group;
 }
@@ -121,29 +118,6 @@ function buildFloppy() {
   label.rotation.x = -Math.PI / 2;
   label.position.set(0, 0.17, 2);
   group.add(shell, shutter, label);
-  return group;
-}
-
-function buildNote() {
-  const group = new Group();
-  group.name = "note";
-  const paper = new Mesh(
-    new PlaneGeometry(8, 8),
-    new MeshBasicMaterial({
-      map: drawTexture(128, 128, (ctx, w, h) => {
-        ctx.fillStyle = "#f2dc5a";
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = "#4a4020";
-        ctx.font = "bold 22px 'Comic Sans MS', cursive, sans-serif";
-        ctx.fillText("now:", 14, 34);
-        ctx.fillRect(14, 50, 90, 3);
-        ctx.fillRect(14, 70, 70, 3);
-        ctx.fillRect(14, 90, 80, 3);
-      }),
-    }),
-  );
-  paper.rotation.x = -Math.PI / 2;
-  group.add(paper);
   return group;
 }
 

@@ -1,6 +1,9 @@
 // A Glencairn-style whisky glass: a tulip bowl on a short stem and a wide foot, half full.
-// The glass is see-through, so it is lit live and not baked. The whisky is opaque and bakes.
-import { CircleGeometry, DoubleSide, Group, LatheGeometry, Mesh, MeshStandardMaterial, Vector2 } from "three";
+// Both the glass and the whisky are see-through, so neither is baked.
+import {
+  AdditiveBlending, CircleGeometry, Color, DoubleSide, Float32BufferAttribute, Group, LatheGeometry, Mesh, MeshBasicMaterial,
+  MeshStandardMaterial, Vector2,
+} from "three";
 
 const SEGMENTS = 48;
 const LEVEL = 5.0;       // whisky surface height in cm
@@ -17,21 +20,42 @@ export function buildGlass() {
   group.name = "glass";
 
   const glass = new Mesh(lathe([...OUTER, ...INNER]), new MeshStandardMaterial({
-    color: 0xdfeaf0, roughness: 0.04, metalness: 0, transparent: true, opacity: 0.12, side: DoubleSide, depthWrite: false,
+    color: 0xdfeaf0, roughness: 0.04, metalness: 0, transparent: true, opacity: 0.08, side: DoubleSide, depthWrite: false,
   }));
 
-  // Emissive carries most of the colour, so the whisky reads as light passing through it.
-  const whiskyMaterial = new MeshStandardMaterial({ color: 0xb8780c, emissive: 0xc48a0a, emissiveIntensity: 0.9, roughness: 0.1 });
-  const surfaceMaterial = new MeshStandardMaterial({ color: 0xe0b030, emissive: 0xeeb824, emissiveIntensity: 0.9, roughness: 0.05 });
-  const whisky = new Mesh(lathe(POUR), whiskyMaterial);
-  const surface = new Mesh(new CircleGeometry(LEVEL_RADIUS - 0.02, SEGMENTS), surfaceMaterial);
+  // The whisky is see-through: a gradient from deep amber at the bottom to bright gold at the
+  // surface, with a lit patch on the bowl floor where light gathers. It is unlit and not baked.
+  const whisky = new Mesh(lathe(POUR), new MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.92, side: DoubleSide, depthWrite: false }));
+  paintGradient(whisky.geometry);
+  whisky.renderOrder = 1;
+  const surface = new Mesh(new CircleGeometry(LEVEL_RADIUS - 0.02, SEGMENTS), new MeshBasicMaterial({ color: 0xe9a01c, transparent: true, opacity: 0.9, depthWrite: false }));
   surface.rotation.x = -Math.PI / 2;
   surface.position.y = LEVEL;
+  surface.renderOrder = 1;
+  const glow = new Mesh(new CircleGeometry(1.5, 24), new MeshBasicMaterial({ color: 0xffd36a, transparent: true, opacity: 0.55, blending: AdditiveBlending, depthWrite: false }));
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.y = 2.6;
+  glow.renderOrder = 1;
+  glass.renderOrder = 2;
 
-  group.add(whisky, surface, glass);
+  group.add(whisky, surface, glow, glass);
   return group;
 }
 
 function lathe(points) {
   return new LatheGeometry(points.map(([r, y]) => new Vector2(r, y)), SEGMENTS);
+}
+
+// Deep amber at the floor of the bowl, bright gold at the surface.
+function paintGradient(geometry) {
+  const low = new Color(0xa84a00);
+  const high = new Color(0xe8920c);
+  const pos = geometry.attributes.position;
+  const colors = [];
+  for (let i = 0; i < pos.count; i++) {
+    const t = Math.min(1, Math.max(0, (pos.getY(i) - 2.5) / (LEVEL - 2.5)));
+    const c = low.clone().lerp(high, t);
+    colors.push(c.r, c.g, c.b);
+  }
+  geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
 }

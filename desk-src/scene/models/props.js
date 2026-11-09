@@ -8,9 +8,6 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import { drawTexture, rng } from "./canvas.js";
 import { buildKeyboard } from "./keyboard.js";
 
-// Where dust drifts in the lamp light, in world cm.
-const LAMP_DUST_BOX = { min: [-72, 6, -16], max: [-30, 36, 10] };
-
 export function buildProps() {
   const group = new Group();
   group.name = "props";
@@ -37,7 +34,7 @@ export function buildProps() {
 
   group.userData.parts = {
     lamp: lamp.group, lampBulb: lamp.bulb, lampHead: lamp.head, mugSteam: mug.steam,
-    floppy, clock, wall, rain: win.rain, lampGlow: lamp.glow, lampDustBox: LAMP_DUST_BOX,
+    floppy, clock, wall, rain: win.rain, lampGlow: lamp.glow,
   };
   return group;
 }

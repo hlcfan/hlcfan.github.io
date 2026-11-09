@@ -36,7 +36,7 @@ export async function startDesk(canvas, { onFatal }) {
   const muteButton = document.getElementById("desk-mute");
 
   const scene = createScene(canvas, { onFatal, reducedMotion: reduced });
-  const ambient = createAmbient({ scene: scene.scene, parts: scene.parts, reduced });
+  const ambient = createAmbient({ parts: scene.parts, reduced });
   const audio = createAudio({ storage: local });
   const power = createPower({ reducedMotion: reduced, isFast: () => local.get("desk.booted") === "1" });
   const screen = createScreenCanvas();
@@ -221,7 +221,7 @@ export async function startDesk(canvas, { onFatal }) {
     return frame;
   }
 
-  // Ambient life (rain, dust, camera sway) runs for 10 s after the page loads or the visitor acts,
+  // Ambient life (rain, lamp glow, camera sway) runs for 10 s after the page loads or the visitor acts,
   // in any power state. After that the scene goes quiet again.
   function demand(dt, now) {
     const active = !reduced && now - lastInput < ACTIVE_WINDOW_MS;

@@ -1,24 +1,18 @@
-// Small ambient life: rain on the window, dust and glow in the lamp light, a swing when the lamp is
+// Small ambient life: rain on the window, glow in the lamp light, a swing when the lamp is
 // clicked. Everything here runs only while the scene is active, so an idle scene still renders nothing.
-import { AdditiveBlending, BufferAttribute, BufferGeometry, Points, PointsMaterial } from "three";
 import { rng } from "./models/canvas.js";
 
-const DUST_COUNT = 70;
 const DROPS = 46;
 const LAMP_HEAD_REST = 0.35;
 
-export function createAmbient({ scene, parts, reduced }) {
-  const dust = buildDust(parts.lampDustBox);
+export function createAmbient({ parts, reduced }) {
   const rain = createRain(parts.rain);
   const swing = { angle: 0, speed: 0 };
   let lampOn = false;
-  scene.add(dust.points);
-  dust.points.visible = false;
 
   return {
     setLamp(on) {
       lampOn = on;
-      dust.points.visible = on && !reduced;
       parts.lampGlow.material.opacity = on ? 0.55 : 0;
     },
     kickLamp() { if (!reduced) swing.speed += 2.4; },
@@ -31,7 +25,6 @@ export function createAmbient({ scene, parts, reduced }) {
       const t = now / 1000;
       rain.step(dt);
       if (lampOn) {
-        dust.step(dt, t);
         const flicker = 0.93 + 0.04 * Math.sin(t * 7.1) + 0.03 * Math.sin(t * 13.7 + 1);
         parts.lampGlow.material.opacity = 0.55 * flicker;
       }
@@ -48,39 +41,6 @@ export function createAmbient({ scene, parts, reduced }) {
     swing.angle += swing.speed * dt;
     parts.lampHead.rotation.z = LAMP_HEAD_REST + swing.angle;
   }
-}
-
-function buildDust({ min, max }) {
-  const rand = rng(3);
-  const pos = new Float32Array(DUST_COUNT * 3);
-  const seed = [];
-  for (let i = 0; i < DUST_COUNT; i++) {
-    for (let k = 0; k < 3; k++) pos[i * 3 + k] = min[k] + rand() * (max[k] - min[k]);
-    seed.push({ vx: (rand() - 0.5) * 0.6, vy: 0.2 + rand() * 0.5, vz: (rand() - 0.5) * 0.6, ph: rand() * 6.28 });
-  }
-  const geo = new BufferGeometry();
-  geo.setAttribute("position", new BufferAttribute(pos, 3));
-  const points = new Points(geo, new PointsMaterial({
-    color: 0xffd9a0, size: 0.45, transparent: true, opacity: 0.45, blending: AdditiveBlending, depthWrite: false,
-  }));
-  points.frustumCulled = false;
-
-  return {
-    points,
-    step(dt, t) {
-      for (let i = 0; i < DUST_COUNT; i++) {
-        const s = seed[i];
-        pos[i * 3] += (s.vx + Math.sin(t * 0.7 + s.ph) * 0.5) * dt;
-        pos[i * 3 + 1] += s.vy * dt;
-        pos[i * 3 + 2] += (s.vz + Math.cos(t * 0.6 + s.ph) * 0.5) * dt;
-        for (let k = 0; k < 3; k++) {
-          if (pos[i * 3 + k] > max[k]) pos[i * 3 + k] = min[k];
-          else if (pos[i * 3 + k] < min[k]) pos[i * 3 + k] = max[k];
-        }
-      }
-      geo.attributes.position.needsUpdate = true;
-    },
-  };
 }
 
 // Streaks fall down the pane, a few drops run slowly. Redrawn only while active.

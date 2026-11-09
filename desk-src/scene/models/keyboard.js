@@ -1,4 +1,4 @@
-// A 104-key beige keyboard: a wedge case, one merged mesh of tapered keycaps, and a cable to the PC.
+// A 104-key beige keyboard: a wedge case, one merged mesh of tapered keycaps, and a cable to the PC's side.
 // Legends come from one canvas texture mapped flat over the key area.
 import { BoxGeometry, CatmullRomCurve3, Float32BufferAttribute, Group, Mesh, MeshStandardMaterial, TubeGeometry, Vector3 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
@@ -39,11 +39,11 @@ export function buildKeyboard() {
   return group;
 }
 
-// The lead leaves the back of the case, drops to the desk and runs under the PC case front.
+// The lead leaves the back of the case, runs along the desk and plugs into the left side of the PC case.
 function buildCable() {
   const curve = new CatmullRomCurve3([
-    [0, 1.6, -7.4], [0.4, 0.8, -9.5], [2.5, 0.3, -12], [1.5, 0.3, -15],
-    [-1.5, 0.3, -18], [-3, 0.3, -21],
+    [0, 1.6, -7.4], [-2, 0.5, -10], [-8, 0.3, -14], [-15, 0.3, -19],
+    [-20, 0.3, -25], [-19.5, 1.5, -29.5], [-16.5, 3, -30.5],
   ].map((p) => new Vector3(...p)));
   const cable = new Mesh(
     new TubeGeometry(curve, 40, 0.25, 6),

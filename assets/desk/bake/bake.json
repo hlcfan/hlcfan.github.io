@@ -10,7 +10,7 @@
           "file": "lm_desk_off.jpg"
         }
       },
-      "exposure": 6.419694872869962
+      "exposure": 6.420017187146175
     },
     "pc": {
       "states": {
@@ -21,7 +21,7 @@
           "file": "lm_pc_off.jpg"
         }
       },
-      "exposure": 3.7132990187492934
+      "exposure": 3.7055667932482743
     },
     "crt": {
       "states": {
@@ -32,7 +32,7 @@
           "file": "lm_crt_off.jpg"
         }
       },
-      "exposure": 3.5604670427847602
+      "exposure": 3.574134163234545
     },
     "wall": {
       "states": {
@@ -43,7 +43,7 @@
           "file": "lm_wall_off.jpg"
         }
       },
-      "exposure": 2.1821095286936
+      "exposure": 2.1821106344029526
     },
     "props": {
       "states": {
@@ -54,7 +54,7 @@
           "file": "lm_props_off.jpg"
         }
       },
-      "exposure": 16.119574947633605
+      "exposure": 16.17568306300951
     },
     "kbd": {
       "states": {
@@ -65,7 +65,7 @@
           "file": "lm_kbd_off.jpg"
         }
       },
-      "exposure": 1.565161995265795
+      "exposure": 1.6804573501365776
     }
   }
 }

@@ -7,7 +7,7 @@ const BIOS_TOP = [
   [0.0, "Merit Modular BIOS v4.51PG", "biosW"],
   [0.0, "Copyright (C) 1984-99, Merit Software", "bios"],
   [0.05, "", "bios"],
-  [0.05, "Pentrix III-550 CPU at 550MHz", "bios"],
+  [0.05, "Pentium III-550 CPU at 550MHz", "bios"],
 ];
 const BIOS_MEM_AT = 0.1;
 const BIOS_AFTER = [
@@ -56,7 +56,7 @@ export const KERNEL_LOG = [
   "Buffer cache hash table entries: 65536 (order 6, 256k)",
   "Page cache hash table entries: 16384 (order 4, 64k)",
   "VFS: Diskquotas version dquot_6.4.0 initialized",
-  "CPU: Pentrix III (Katmai) stepping 03",
+  "CPU: Pentium III (Katmai) stepping 03",
   "Checking 386/387 coupling... OK, FPU using exception 16 error reporting.",
   "Checking 'hlt' instruction... OK.",
   "POSIX conformance testing by UNIFIX",

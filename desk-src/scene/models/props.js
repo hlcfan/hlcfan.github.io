@@ -16,7 +16,7 @@ export function buildProps() {
   const lamp = buildLamp();
   lamp.group.position.set(-72, 0, -16);
   const glass = buildGlass();
-  glass.position.set(48, 0, 14);
+  glass.position.set(57, 0, 12);
   const floppy = buildFloppy();
   floppy.position.set(46, 0.4, 36);
   floppy.rotation.y = -0.35;

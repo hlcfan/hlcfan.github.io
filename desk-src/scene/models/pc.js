@@ -107,7 +107,7 @@ function addDecal(parent, texture, w, h, x, y, z) {
   parent.add(m);
 }
 
-// Invented names throughout. No real trademarks.
+// The CPU badge uses the real Pentium name. The BIOS, monitor and CD-ROM names are invented.
 function cdLabel() {
   return drawTexture(256, 40, (ctx, w, h) => {
     ctx.fillStyle = "#3a382f";
@@ -127,7 +127,7 @@ function badge() {
     ctx.fillStyle = "#e9e4d2";
     ctx.font = "bold 30px Arial, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("Pentrix III", w / 2, 46);
+    ctx.fillText("Pentium III", w / 2, 46);
     ctx.font = "20px Arial, sans-serif";
     ctx.fillText("inside", w / 2, 78);
   });

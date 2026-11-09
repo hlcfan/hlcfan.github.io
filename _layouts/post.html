@@ -1,14 +1,6 @@
 ---
 layout: default
 ---
-<p class="back-to-desk"><a href="{{ '/' | relative_url }}#cat={{ page.slug }}">&larr; Back to the desk</a></p>
-<script>
-  (function () {
-    var r = document.referrer;
-    if (r && new URL(r).origin !== location.origin) document.querySelector(".back-to-desk").hidden = true;
-  })();
-</script>
-
 <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
 
   <header class="post-header">

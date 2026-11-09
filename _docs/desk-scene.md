@@ -41,7 +41,7 @@ Non-goals for the first release:
 - A real Linux in the browser (WebAssembly VM). The shell is a JavaScript simulation.
 - A graphical session started with `startx`, shown as an IceWM or fvwm95 desktop with a Windows 95 look. It ships after the terminal is solid (milestone M6).
 - Gyroscope parallax, VR, or multiplayer cursors.
-- Rewriting the existing post layout beyond adding a "back to the desk" link.
+- Rewriting the existing post layout.
 
 ## Decisions
 
@@ -93,7 +93,7 @@ Timings:
 - **Orbit.** Drag on the background or the desk. Dragging has inertia and springs back slowly to center after 6 seconds of no input.
 - **Focus mode.** A click on the screen while READY moves the camera in front of the monitor over 600 ms. A click outside the screen, or the second `Esc` (see Keyboard capture), returns it. In focus mode the orbit range shrinks to 4 degrees. When the narrow layout is active (see Terminal behavior), the camera enters focus mode by itself at READY, because the default view is unreadable at that size.
 - **Keyboard capture.** Typing works whenever the machine is READY and focus mode is active, or the hidden input has focus. A hidden `<input>` receives the keys, which also makes mobile keyboards, IME, and paste work. `Tab` completes commands while the input has focus, so `Esc` is the way out. The first `Esc` blurs the input and moves focus to the mute button, the next element in the tab order. Focus does not go to the power button, because a habitual Enter there would shut the machine down. A second `Esc` leaves focus mode.
-- **Props.** The lamp toggles room light on click. The floppy disk links to GitHub and plays an insert animation first. The sticky note shows the "now" page. The mug steams. A wall clock shows the visitor's local time. All props are optional for M1 to M5 and land in M6.
+- **Props.** The lamp toggles room light on click. The floppy disk links to GitHub and plays an insert animation first. The mug steams. A wall clock shows the visitor's local time. All props are optional for M1 to M5 and land in M6.
 - **Mute.** A speaker icon in the top-right corner. State is stored in `localStorage` key `desk.muted`.
 
 ### Terminal behavior
@@ -166,7 +166,7 @@ desk-src/
 			pc.js             the case, drives, button, LEDs
 			crt.js            the monitor and the screen mesh
 			desk.js           desk, mat, contact shadows
-			props.js          lamp, mug, floppy, note, clock
+			props.js          lamp, mug, floppy, clock
 	screen/
 		screen-canvas.js    draws terminal cells to the 2D canvas
 		crt-shader.js       GLSL for curvature, scanlines, mask, power curve
@@ -331,10 +331,6 @@ permalink: /posts.json
 
 If the body element is missing, the command prints an error and the real URL.
 
-### Changes to the post layout
-
-At M5, after the scene moves to `/`, `_layouts/post.html` gets one fixed link, "Back to the desk", pointing at `/#cat=<slug>`. The hash powers the machine on and runs `cat` for that post (see Timings). The link is hidden only when `document.referrer` is from a different origin. Direct visits, which have an empty referrer, and same-site visits see it.
-
 ### Config
 
 - Add `desk-src/`, `node_modules/`, `vendor/`, `package.json`, `package-lock.json`, `test-results/`, `playwright-report/`, `README.md`, and `_docs/` to `exclude` in `_config.yml`. The current `exclude` list replaces Jekyll's defaults, so `node_modules/` and `vendor/` are not excluded today. `vendor/` matters in the workflow, because `ruby/setup-ruby` installs gems into `vendor/bundle`, and Jekyll would otherwise try to process them. `_docs/` is already ignored by Jekyll because of the underscore, and the line is there for clarity.
@@ -453,7 +449,7 @@ Sizes assume focused work days. They are estimates, not commitments.
 | M2 | Terminal core and accessibility mirror | Canvas screen with CRT shader on a static prompt, in the wide and narrow layouts. Dirty-row texture upload. Focus mode, including the automatic zoom in the narrow layout. Shell, virtual file system, `ls`, `cd`, `cat`, `help`, `posts.json`. Hidden input and mobile keyboard work. Live region and proxy controls, with `Esc` releasing focus. Decide open question 6 on a real phone | 5 d |
 | M3 | Power and boot | State machine, boot animation, shutdown, skip-boot, `desk.booted` fast path, power curve in the shader | 2 d |
 | M4 | Audio | All synthesized sounds, mute toggle, unlock on first gesture, tab-hidden handling | 2 d |
-| M5 | Polish and launch | `less`, `grep`, completion, history, `theme`, `crt`, performance pass on real devices. After the real-device checks pass, move the scene to `/`, turn `/desk/` into a redirect, and add the back link to posts | 4 d |
+| M5 | Polish and launch | `less`, `grep`, completion, history, `theme`, `crt`, performance pass on real devices. After the real-device checks pass, move the scene to `/`, and turn `/desk/` into a redirect | 4 d |
 | M6 | Extras | Props, easter eggs, then `startx` and an IceWM or fvwm95 desktop with a Windows 95 look, as its own design note | open |
 
 Ship after M5. M6 items ship one at a time.
@@ -495,7 +491,7 @@ What differs from the plan above, and what is still open.
 - **Test hooks.** The root element carries `data-desk-state` and `data-desk-layout`. With `localStorage` key `desk.test` set to `1`, `window.__deskTest.point(name)` returns the client position of a part, for e2e clicks on props.
 - **Wall.** M6 added a back wall behind the desk, for the clock.
 - **Not done.**
-  - Promotion is done at the owner's request, ahead of the M5 real-device checks. The scene is at `/`, `/desk/` redirects and keeps the hash, and posts have the "Back to the desk" link. Roll back by restoring `index.html` to `layout: home` if the checks fail.
+  - Promotion is done at the owner's request, ahead of the M5 real-device checks. The scene is at `/`, `/desk/` redirects and keeps the hash, and posts keep their layout with no back link (removed at the owner's request). Roll back by restoring `index.html` to `layout: home` if the checks fail.
   - Open question 6 (phones). The 40-column layout works in iPhone 13 emulation. A real phone decides it.
   - The `startx` desktop, which this doc defers to its own design note.
   - Frame cost on real devices. The loop measures CPU render time only, so a slow GPU does not trigger the pixel-ratio drop.

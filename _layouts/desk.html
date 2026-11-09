@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: "en" }}" data-base="{{ site.baseurl }}">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{{ site.title | escape }}</title>
+  <meta name="description" content="{{ site.description | default: site.title | escape }}">
+  <link rel="stylesheet" href="{{ '/assets/main.css' | relative_url }}">
+  {%- feed_meta -%}
+  <script>
+    // With JS on, hold the plain list back until the scene starts or fails.
+    document.documentElement.classList.add("scene-pending");
+    setTimeout(function () {
+      var c = document.documentElement.classList;
+      if (!c.contains("scene-on")) c.remove("scene-pending");
+    }, 8000);
+  </script>
+  <style>
+    .scene-pending, .scene-pending body { background: #0b0a09; }
+    .scene-pending:not(.list-open) .desk-list { display: none; }
+    .desk-canvas, .desk-mute, .list-close { display: none; }
+    .scene-on, .scene-on body { height: 100%; margin: 0; overflow: hidden; background: #0b0a09; }
+    .scene-on .desk-canvas {
+      display: block; position: fixed; left: 0; right: 0; top: var(--vvt, 0px);
+      width: 100%; height: var(--vvh, 100%); touch-action: none;
+    }
+    .scene-on .desk-list { display: none; }
+    .scene-on.list-open .desk-list { display: block; position: fixed; inset: 0; overflow: auto; background: #fff; z-index: 10; }
+    .scene-on.list-open .list-close { display: inline-block; margin: 16px 0; }
+
+    .sr-only {
+      position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+      overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; font-size: 16px;
+    }
+    .skip-link { position: absolute; left: 8px; top: 8px; z-index: 20; padding: 4px 8px; background: #fff; }
+    .skip-link:not(:focus) { width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); padding: 0; }
+
+    .scene-on .desk-mute {
+      display: grid; place-items: center; position: fixed; top: calc(12px + env(safe-area-inset-top)); right: 12px; z-index: 5;
+      width: 44px; height: 44px; padding: 0; border: 1px solid #4a4638; border-radius: 8px;
+      background: rgba(20, 18, 14, 0.7); color: #e8e2d0; cursor: pointer;
+    }
+    @font-face {
+      font-family: "VT323"; font-display: swap;
+      src: url("{{ '/assets/fonts/vt323-subset.woff2' | relative_url }}") format("woff2");
+    }
+    .desk-nav { display: none; }
+    .scene-on .desk-nav {
+      display: flex; gap: 8px; position: fixed; z-index: 5; right: 66px; top: calc(12px + env(safe-area-inset-top));
+    }
+    .desk-nav a {
+      display: grid; place-items: center; min-width: 44px; height: 44px; padding: 0 14px; box-sizing: border-box;
+      border: 2px solid #4a4638; border-radius: 0; background: rgba(20, 18, 14, 0.7);
+      color: #e8e2d0; font: 24px/1 "VT323", "Courier New", monospace; letter-spacing: 1px;
+      text-decoration: none; text-transform: lowercase; -webkit-font-smoothing: none; font-smooth: never;
+    }
+    .desk-nav a:hover { background: rgba(50, 44, 32, 0.85); }
+    .desk-nav a:focus-visible { outline: 3px solid #6fa8ff; outline-offset: 2px; }
+    .desk-mute:focus-visible, .skip-link:focus-visible, .list-close:focus-visible { outline: 3px solid #6fa8ff; outline-offset: 2px; }
+    .desk-mute svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .desk-mute[data-muted="true"] .waves, .desk-mute[data-muted="false"] .slash { display: none; }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#posts" id="skip-link">Skip to posts</a>
+  <canvas id="desk-canvas" class="desk-canvas" aria-hidden="true"></canvas>
+  <button id="desk-mute" class="desk-mute" type="button" aria-pressed="false" aria-label="Sound is on. Turn sound off" data-muted="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 9v6h4l5 4V5L8 9H4z"/>
+      <path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>
+      <path class="slash" d="M16 9l5 6M21 9l-5 6"/>
+    </svg>
+  </button>
+  <nav class="desk-nav" aria-label="Site">
+    <a id="nav-posts" href="{{ '/posts/' | relative_url }}">Posts</a>
+    <a href="{{ '/about/' | relative_url }}">About</a>
+  </nav>
+  <main class="desk-list" id="posts">
+    <div class="wrapper">
+      <button id="list-close" class="list-close" type="button">Back to the desk</button>
+      {{ content }}
+    </div>
+  </main>
+  <script type="module" src="{{ '/assets/js/desk/main.js' | relative_url }}"></script>
+</body>
+</html>

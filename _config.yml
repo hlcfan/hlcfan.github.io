@@ -27,10 +27,29 @@ permalink: /:title.html
 # Build settings
 markdown: kramdown
 theme: minima
-gems:
+plugins:
   - jekyll-feed
 exclude:
   - Gemfile
   - Gemfile.lock
+  - desk-src/
+  - node_modules/
+  - vendor/
+  - package.json
+  - package-lock.json
+  - test-results/
+  - playwright-report/
+  - README.md
+  - _docs/
+  - scripts/
+  - e2e/
+  - vitest.config.js
+  - playwright.config.js
+sass:
+  quiet_deps: true
+  silence_deprecations:
+    - import
+    - global-builtin
+    - color-functions
 disqus:
   shortname: shurlin

@@ -1,0 +1,122 @@
+
+    <p>Mux is a great routing library for building API apps. I was hoping these web
+frameworks would implement the notification machinism, for instrumenting our
+apps, like HTTP request duration, DB transactions, Redis operations, by a
+protocol. Yet, this is somehow controversial.</p>
+
+<p>In this article, we’ll only collect HTTP request duration and status code. Once
+we have the data, we can send it to Prometheus or Datadog. Since I’m using mux,
+the idea is to implement a middleware to intercept the info for us. A simple
+middleware looks like this:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="n">metricMiddleware</span><span class="p">(</span><span class="n">next</span> <span class="n">http</span><span class="o">.</span><span class="n">Handler</span><span class="p">)</span> <span class="n">http</span><span class="o">.</span><span class="n">Handler</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">http</span><span class="o">.</span><span class="n">HandlerFunc</span><span class="p">(</span><span class="k">func</span><span class="p">(</span><span class="n">w</span> <span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="p">,</span> <span class="n">r</span> <span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Request</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c">// Do stuff here</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">RequestURI</span><span class="p">)</span>
+        <span class="c">// Call the next handler, which can be another middleware in the chain, or the final handler.</span>
+        <span class="n">next</span><span class="o">.</span><span class="n">ServeHTTP</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>A middleware is a wrapper wraps a <code class="language-plaintext highlighter-rouge">http.Handler</code> and return a <code class="language-plaintext highlighter-rouge">http.Handler</code>.
+Within the wrapping process, we can get what we want.</p>
+
+<h3 id="http-request-duration">HTTP request duration</h3>
+
+<p>To get HTTP request duration is easy, we just capture the time before the actual
+HTTP call and calculate the duration after the call. But only have the duration
+doesn’t mean anything, we’ll also need to know which function costs how much
+time. Since we use Mux here, it has this function <code class="language-plaintext highlighter-rouge">func (r *Router) Match(req *http.Request, match *RouteMatch) bool</code>
+<a href="https://github.com/gorilla/mux/blob/v1.7.3/mux.go#L138">https://github.com/gorilla/mux/blob/v1.7.3/mux.go#L138</a>,
+from which we can get the corresponding route based on <code class="language-plaintext highlighter-rouge">http.Request</code>. Let’s
+extend our function a bit.</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="n">metricMiddleware</span><span class="p">(</span><span class="n">router</span> <span class="o">*</span><span class="n">mux</span><span class="o">.</span><span class="n">Router</span><span class="p">,</span> <span class="n">next</span> <span class="n">http</span><span class="o">.</span><span class="n">Handler</span><span class="p">)</span> <span class="n">http</span><span class="o">.</span><span class="n">Handler</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">http</span><span class="o">.</span><span class="n">HandlerFunc</span><span class="p">(</span><span class="k">func</span><span class="p">(</span><span class="n">w</span> <span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="p">,</span> <span class="n">r</span> <span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Request</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">now</span> <span class="o">:=</span> <span class="n">time</span><span class="o">.</span><span class="n">Now</span><span class="p">()</span><span class="o">.</span><span class="n">UTC</span><span class="p">()</span>
+        <span class="c">// Call the next handler, which can be another middleware in the chain, or the final handler.</span>
+        <span class="n">next</span><span class="o">.</span><span class="n">ServeHTTP</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+        <span class="n">duration</span> <span class="o">:=</span> <span class="n">time</span><span class="o">.</span><span class="n">Since</span><span class="p">(</span><span class="n">now</span><span class="p">)</span>
+        <span class="k">var</span> <span class="n">match</span> <span class="n">mux</span><span class="o">.</span><span class="n">RouteMatch</span>
+        <span class="k">go</span> <span class="k">func</span><span class="p">(</span><span class="n">duration</span> <span class="n">time</span><span class="o">.</span><span class="n">Duration</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="n">router</span><span class="o">.</span><span class="n">Match</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">match</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">routeName</span> <span class="o">:=</span> <span class="n">match</span><span class="o">.</span><span class="n">Route</span><span class="o">.</span><span class="n">GetName</span><span class="p">()</span>
+                <span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="s">"Route: "</span><span class="p">,</span> <span class="n">routeName</span><span class="p">,</span> <span class="s">"Duration: "</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}(</span><span class="n">duration</span><span class="p">)</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Now we know which handler function costs how much time, and we put it in a
+Goroutine, so it’ll just run lonely there.</p>
+
+<h3 id="http-status">HTTP status</h3>
+
+<p>To get HTTP status, we’ll need to implement our own <code class="language-plaintext highlighter-rouge">ResponseWriter</code>, see <a href="https://golang.org/pkg/net/http/#ResponseWriter">https://golang.org/pkg/net/http/#ResponseWriter</a></p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// customResponseWriter is used for getting the response status</span>
+<span class="k">type</span> <span class="n">customResponseWriter</span> <span class="k">struct</span> <span class="p">{</span>
+	<span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span>
+	<span class="n">status</span> <span class="kt">int</span>
+	<span class="n">length</span> <span class="kt">int</span>
+<span class="p">}</span>
+
+<span class="c">// WriteHeader implements the interface</span>
+<span class="k">func</span> <span class="p">(</span><span class="n">w</span> <span class="o">*</span><span class="n">customResponseWriter</span><span class="p">)</span> <span class="n">WriteHeader</span><span class="p">(</span><span class="n">status</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">w</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span>
+	<span class="n">w</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="o">.</span><span class="n">WriteHeader</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c">// Write implements the interface</span>
+<span class="k">func</span> <span class="p">(</span><span class="n">w</span> <span class="o">*</span><span class="n">customResponseWriter</span><span class="p">)</span> <span class="n">Write</span><span class="p">(</span><span class="n">b</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="n">w</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="m">0</span> <span class="p">{</span>
+		<span class="n">w</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="m">200</span>
+	<span class="p">}</span>
+	<span class="n">n</span><span class="p">,</span> <span class="n">err</span> <span class="o">:=</span> <span class="n">w</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="o">.</span><span class="n">Write</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+	<span class="n">w</span><span class="o">.</span><span class="n">length</span> <span class="o">+=</span> <span class="n">n</span>
+	<span class="k">return</span> <span class="n">n</span><span class="p">,</span> <span class="n">err</span>
+<span class="p">}</span>
+
+<span class="k">func</span> <span class="n">metricMiddleware</span><span class="p">(</span><span class="n">router</span> <span class="o">*</span><span class="n">mux</span><span class="o">.</span><span class="n">Router</span><span class="p">,</span> <span class="n">next</span> <span class="n">http</span><span class="o">.</span><span class="n">Handler</span><span class="p">)</span> <span class="n">http</span><span class="o">.</span><span class="n">Handler</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">http</span><span class="o">.</span><span class="n">HandlerFunc</span><span class="p">(</span><span class="k">func</span><span class="p">(</span><span class="n">w</span> <span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="p">,</span> <span class="n">r</span> <span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Request</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">now</span> <span class="o">:=</span> <span class="n">time</span><span class="o">.</span><span class="n">Now</span><span class="p">()</span><span class="o">.</span><span class="n">UTC</span><span class="p">()</span>
+        <span class="n">writer</span> <span class="o">:=</span> <span class="n">customResponseWriter</span><span class="p">{</span><span class="n">ResponseWriter</span><span class="o">:</span> <span class="n">w</span><span class="p">}</span>
+        <span class="c">// Call the next handler, which can be another middleware in the chain, or the final handler.</span>
+        <span class="n">next</span><span class="o">.</span><span class="n">ServeHTTP</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">writer</span><span class="p">)</span>
+        <span class="n">duration</span> <span class="o">:=</span> <span class="n">time</span><span class="o">.</span><span class="n">Since</span><span class="p">(</span><span class="n">now</span><span class="p">)</span>
+        <span class="k">defer</span> <span class="k">func</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">go</span> <span class="k">func</span><span class="p">(</span><span class="n">duration</span> <span class="n">time</span><span class="o">.</span><span class="n">Duration</span><span class="p">,</span> <span class="n">statusCode</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">var</span> <span class="n">match</span> <span class="n">mux</span><span class="o">.</span><span class="n">RouteMatch</span>
+                <span class="k">if</span> <span class="n">middleware</span><span class="o">.</span><span class="n">Router</span><span class="o">.</span><span class="n">Match</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">match</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">routeName</span> <span class="o">:=</span> <span class="n">match</span><span class="o">.</span><span class="n">Route</span><span class="o">.</span><span class="n">GetName</span><span class="p">()</span>
+                    <span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="s">"Route: "</span><span class="p">,</span> <span class="n">routeName</span><span class="p">,</span> <span class="s">"Status"</span><span class="p">,</span> <span class="n">statusCode</span><span class="p">,</span> <span class="s">"Duration: "</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
+                <span class="p">}</span>
+            <span class="p">}(</span><span class="n">httpDuration</span><span class="p">,</span> <span class="n">sw</span><span class="o">.</span><span class="n">status</span><span class="p">)</span>
+        <span class="p">}()</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Note we defer the goroutine call, that’s because the deferred functions will be
+always executed. So if something goes wrong, our deferred functions still work.</p>
+
+<p>Through our customized <code class="language-plaintext highlighter-rouge">ResponseWriter</code>, we’re able to extract the info we need.
+Yay.</p>
+
+<h3 id="recap">Recap</h3>
+
+<p>We can get not only HTTP request duration and response status, but also other
+information, like User Agent, query parameters.etc. Think furthur, maybe we can
+also capture the error trace stack from here, if internal server error. Or even
+furthur, we can inject metrics into <code class="language-plaintext highlighter-rouge">Context</code> and collect them from the
+middleware, which is convenient, instead of scatterring probes code in our
+codebase. Sure Opentelemetry works with this perfectly. Middleware is a powerful
+machinism, use it properly help make code easy to maintain.</p>
+
+<p>I prefer the “Instrumentation API” way, so that we’ll only need the listener to
+listen on the notifiations/events.</p>
+
+
+  

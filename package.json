@@ -1,0 +1,31 @@
+{
+  "name": "hlcfan.github.io",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "rm -rf assets/js/desk && esbuild desk-src/main.js --bundle --splitting --minify --format=esm --target=es2020 --legal-comments=eof --outdir=assets/js/desk",
+    "dev": "rm -rf assets/js/desk && esbuild desk-src/main.js --bundle --splitting --format=esm --target=es2020 --sourcemap --watch --outdir=assets/js/desk",
+    "bake": "node tools/bake/export.mjs && ${BLENDER:-/Applications/Blender.app/Contents/MacOS/Blender} -b -P tools/bake/bake.py -- tools/bake/out/scene.glb tools/bake/out/meta.json assets/desk/bake 256 1024",
+    "size": "node scripts/size.js",
+    "test": "vitest run --passWithNoTests",
+    "e2e": "playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hlcfan/hlcfan.github.io.git"
+  },
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/hlcfan/hlcfan.github.io/issues"
+  },
+  "homepage": "https://github.com/hlcfan/hlcfan.github.io#readme",
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "esbuild": "0.28.2",
+    "jsdom": "29.1.1",
+    "vitest": "5.1.0"
+  },
+  "dependencies": {
+    "three": "0.187.0"
+  },
+  "private": true
+}

@@ -1,0 +1,264 @@
+
+    <p>Context is a very important component, if you write Golang, you can see it every
+where, within a Request, DB query, outgoing call, Goroutine .etc. Almost
+every where when there’re side effects. We can use Context to cancel operation,
+cancel operation before deadline, cancel operation with timeout, or carry some
+request scoped data, like current user, tracing data .etc.</p>
+
+<p>Have you ever been inquisitive when using Context? I have.</p>
+
+<h3 id="whats-the-difference-between-todo-and-background">What’s the difference between <code class="language-plaintext highlighter-rouge">TODO()</code> and <code class="language-plaintext highlighter-rouge">Background()</code>?</h3>
+
+<p>According to official docs</p>
+
+<p>https://golang.org/pkg/context/#Background</p>
+<blockquote>
+  <p>Background returns a non-nil, empty Context. It is never canceled, has no
+values, and has no deadline. It is typically used by the main function,
+initialization, and tests, and as the top-level Context for incoming requests.</p>
+</blockquote>
+
+<p>https://golang.org/pkg/context/#TODO</p>
+<blockquote>
+  <p>TODO returns a non-nil, empty Context. Code should use context.TODO when it’s
+unclear which Context to use or it is not yet available (because the
+surrounding function has not yet been extended to accept a Context parameter).</p>
+</blockquote>
+
+<p>They both claim they return empty Context, but are they any different from each
+other? Let’s check the source code.</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="p">(</span>
+	<span class="n">background</span> <span class="o">=</span> <span class="nb">new</span><span class="p">(</span><span class="n">emptyCtx</span><span class="p">)</span>
+	<span class="n">todo</span>       <span class="o">=</span> <span class="nb">new</span><span class="p">(</span><span class="n">emptyCtx</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="c">// Background returns a non-nil, empty Context. It is never canceled, has no</span>
+<span class="c">// values, and has no deadline. It is typically used by the main function,</span>
+<span class="c">// initialization, and tests, and as the top-level Context for incoming</span>
+<span class="c">// requests.</span>
+<span class="k">func</span> <span class="n">Background</span><span class="p">()</span> <span class="n">Context</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="n">background</span>
+<span class="p">}</span>
+
+<span class="c">// TODO returns a non-nil, empty Context. Code should use context.TODO when</span>
+<span class="c">// it's unclear which Context to use or it is not yet available (because the</span>
+<span class="c">// surrounding function has not yet been extended to accept a Context</span>
+<span class="c">// parameter).</span>
+<span class="k">func</span> <span class="n">TODO</span><span class="p">()</span> <span class="n">Context</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="n">todo</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Okay, they’re no different from implementation, only the context of where
+they should be used.</p>
+
+<h3 id="why-context-can-be-passed-along">Why Context can be passed along?</h3>
+
+<p>Take a look at following example</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ctx</span><span class="p">,</span> <span class="n">cancel</span> <span class="o">:=</span> <span class="n">context</span><span class="o">.</span><span class="n">WithDeadline</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">Now</span><span class="p">()</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="m">100</span><span class="o">*</span><span class="n">time</span><span class="o">.</span><span class="n">Millisecond</span><span class="p">))</span>
+<span class="k">defer</span> <span class="n">cancel</span><span class="p">()</span>
+
+<span class="n">db</span><span class="o">.</span><span class="n">QueryContext</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">stmt</span><span class="p">,</span> <span class="n">args</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>We create new Context with timeout and pass it to <code class="language-plaintext highlighter-rouge">QueryContext</code>, when timeout,
+it cancels the operation. Let’s dissect <code class="language-plaintext highlighter-rouge">WithDeadline</code>.</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// A cancelCtx can be canceled. When canceled, it also cancels any children</span>
+<span class="c">// that implement canceler.</span>
+<span class="k">type</span> <span class="n">cancelCtx</span> <span class="k">struct</span> <span class="p">{</span>
+	<span class="n">Context</span>
+
+	<span class="n">mu</span>       <span class="n">sync</span><span class="o">.</span><span class="n">Mutex</span>            <span class="c">// protects following fields</span>
+	<span class="n">done</span>     <span class="k">chan</span> <span class="k">struct</span><span class="p">{}</span>         <span class="c">// created lazily, closed by first cancel call</span>
+	<span class="n">children</span> <span class="k">map</span><span class="p">[</span><span class="n">canceler</span><span class="p">]</span><span class="k">struct</span><span class="p">{}</span> <span class="c">// set to nil by the first cancel call</span>
+	<span class="n">err</span>      <span class="kt">error</span>                 <span class="c">// set to non-nil by the first cancel call</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>From <code class="language-plaintext highlighter-rouge">cancelCtx</code> we know it persists the children in <code class="language-plaintext highlighter-rouge">children</code> map.</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="n">WithDeadline</span><span class="p">(</span><span class="n">parent</span> <span class="n">Context</span><span class="p">,</span> <span class="n">d</span> <span class="n">time</span><span class="o">.</span><span class="n">Time</span><span class="p">)</span> <span class="p">(</span><span class="n">Context</span><span class="p">,</span> <span class="n">CancelFunc</span><span class="p">)</span> <span class="p">{</span>
+  <span class="o">...</span>
+	<span class="n">c</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="n">timerCtx</span><span class="p">{</span>
+		<span class="n">cancelCtx</span><span class="o">:</span> <span class="n">newCancelCtx</span><span class="p">(</span><span class="n">parent</span><span class="p">),</span>
+		<span class="n">deadline</span><span class="o">:</span>  <span class="n">d</span><span class="p">,</span>
+	<span class="p">}</span>
+	<span class="n">propagateCancel</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+  <span class="o">...</span>
+<span class="p">}</span>
+
+<span class="k">func</span> <span class="n">propagateCancel</span><span class="p">(</span><span class="n">parent</span> <span class="n">Context</span><span class="p">,</span> <span class="n">child</span> <span class="n">canceler</span><span class="p">)</span> <span class="p">{</span>
+  <span class="o">...</span>
+	<span class="k">if</span> <span class="n">p</span><span class="p">,</span> <span class="n">ok</span> <span class="o">:=</span> <span class="n">parentCancelCtx</span><span class="p">(</span><span class="n">parent</span><span class="p">);</span> <span class="n">ok</span> <span class="p">{</span>
+		<span class="n">p</span><span class="o">.</span><span class="n">mu</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+		<span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">err</span> <span class="o">!=</span> <span class="no">nil</span> <span class="p">{</span>
+			<span class="c">// parent has already been canceled</span>
+			<span class="n">child</span><span class="o">.</span><span class="n">cancel</span><span class="p">(</span><span class="no">false</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">err</span><span class="p">)</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">children</span> <span class="o">==</span> <span class="no">nil</span> <span class="p">{</span>
+				<span class="n">p</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="nb">make</span><span class="p">(</span><span class="k">map</span><span class="p">[</span><span class="n">canceler</span><span class="p">]</span><span class="k">struct</span><span class="p">{})</span>
+			<span class="p">}</span>
+			<span class="n">p</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="n">child</span><span class="p">]</span> <span class="o">=</span> <span class="k">struct</span><span class="p">{}{}</span>
+		<span class="p">}</span>
+		<span class="n">p</span><span class="o">.</span><span class="n">mu</span><span class="o">.</span><span class="n">Unlock</span><span class="p">()</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="o">...</span>
+	<span class="p">}</span>
+
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">p, ok := parentCancelCtx(parent)</code> returns the <code class="language-plaintext highlighter-rouge">cancelCtx</code> of parent context.
+The next 7th line creates a new <code class="language-plaintext highlighter-rouge">children</code> if <code class="language-plaintext highlighter-rouge">children</code> is empty, then insert
+the child into the <code class="language-plaintext highlighter-rouge">children</code> map.</p>
+
+<h3 id="whats-the-rationale-behind-timeoutdeadline">What’s the rationale behind timeout/deadline?</h3>
+
+<p>First, <code class="language-plaintext highlighter-rouge">WithTimeout</code> returns <code class="language-plaintext highlighter-rouge">WithDeadline</code>, more like a shortcut for easy use.</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="n">WithTimeout</span><span class="p">(</span><span class="n">parent</span> <span class="n">Context</span><span class="p">,</span> <span class="n">timeout</span> <span class="n">time</span><span class="o">.</span><span class="n">Duration</span><span class="p">)</span> <span class="p">(</span><span class="n">Context</span><span class="p">,</span> <span class="n">CancelFunc</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="n">WithDeadline</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">Now</span><span class="p">()</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="n">timeout</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="n">WithDeadline</span><span class="p">(</span><span class="n">parent</span> <span class="n">Context</span><span class="p">,</span> <span class="n">d</span> <span class="n">time</span><span class="o">.</span><span class="n">Time</span><span class="p">)</span> <span class="p">(</span><span class="n">Context</span><span class="p">,</span> <span class="n">CancelFunc</span><span class="p">)</span> <span class="p">{</span>
+  <span class="o">...</span>
+	<span class="n">c</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="n">timerCtx</span><span class="p">{</span>
+		<span class="n">cancelCtx</span><span class="o">:</span> <span class="n">newCancelCtx</span><span class="p">(</span><span class="n">parent</span><span class="p">),</span>
+		<span class="n">deadline</span><span class="o">:</span>  <span class="n">d</span><span class="p">,</span>
+	<span class="p">}</span>
+  <span class="o">...</span>
+	<span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">err</span> <span class="o">==</span> <span class="no">nil</span> <span class="p">{</span>
+		<span class="n">c</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">AfterFunc</span><span class="p">(</span><span class="n">dur</span><span class="p">,</span> <span class="k">func</span><span class="p">()</span> <span class="p">{</span>
+			<span class="n">c</span><span class="o">.</span><span class="n">cancel</span><span class="p">(</span><span class="no">true</span><span class="p">,</span> <span class="n">DeadlineExceeded</span><span class="p">)</span>
+		<span class="p">})</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="n">c</span><span class="p">,</span> <span class="k">func</span><span class="p">()</span> <span class="p">{</span> <span class="n">c</span><span class="o">.</span><span class="n">cancel</span><span class="p">(</span><span class="no">true</span><span class="p">,</span> <span class="n">Canceled</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Easy to notice it utilize <code class="language-plaintext highlighter-rouge">time.AfterFunc</code> under the hood, after certain time
+duration, it triggers the execution of cancellation.</p>
+
+<h3 id="how-operation-is-canceled">How operation is canceled?</h3>
+
+<p>Let’s revisit <code class="language-plaintext highlighter-rouge">cancel(removeFromParent bool, err error)</code>.</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// closedchan is a reusable closed channel.</span>
+<span class="k">var</span> <span class="n">closedchan</span> <span class="o">=</span> <span class="nb">make</span><span class="p">(</span><span class="k">chan</span> <span class="k">struct</span><span class="p">{})</span>
+
+<span class="k">func</span> <span class="n">init</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nb">close</span><span class="p">(</span><span class="n">closedchan</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">func</span> <span class="p">(</span><span class="n">c</span> <span class="o">*</span><span class="n">cancelCtx</span><span class="p">)</span> <span class="n">cancel</span><span class="p">(</span><span class="n">removeFromParent</span> <span class="kt">bool</span><span class="p">,</span> <span class="n">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+  <span class="o">...</span>
+	<span class="n">c</span><span class="o">.</span><span class="n">err</span> <span class="o">=</span> <span class="n">err</span>
+	<span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">done</span> <span class="o">==</span> <span class="no">nil</span> <span class="p">{</span>
+		<span class="n">c</span><span class="o">.</span><span class="n">done</span> <span class="o">=</span> <span class="n">closedchan</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nb">close</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">done</span><span class="p">)</span>
+	<span class="p">}</span>
+  <span class="o">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>When we call <code class="language-plaintext highlighter-rouge">defer cancel()</code>, it actually calls above function. In the
+function, it just closes the <code class="language-plaintext highlighter-rouge">done</code> channel or assign a closed one to it. Then
+we know it’s time to stop the operation. Excerpt a few lines from
+https://golang.org/src/database/sql/sql.go.</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// Runs in a separate goroutine, opens new connections when requested.</span>
+<span class="k">func</span> <span class="p">(</span><span class="n">db</span> <span class="o">*</span><span class="n">DB</span><span class="p">)</span> <span class="n">connectionOpener</span><span class="p">(</span><span class="n">ctx</span> <span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="k">select</span> <span class="p">{</span>
+		<span class="k">case</span> <span class="o">&lt;-</span><span class="n">ctx</span><span class="o">.</span><span class="n">Done</span><span class="p">()</span><span class="o">:</span>
+			<span class="k">return</span>
+		<span class="k">case</span> <span class="o">&lt;-</span><span class="n">db</span><span class="o">.</span><span class="n">openerCh</span><span class="o">:</span>
+			<span class="n">db</span><span class="o">.</span><span class="n">openNewConnection</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>At line 4, if operation times out, <code class="language-plaintext highlighter-rouge">c.done</code> is closed, then in subsequent calls,
+<code class="language-plaintext highlighter-rouge">ctx.Done</code> is unblocked, then that corresponding branch will be executed. In
+this case, it directly exit the function.</p>
+
+<h3 id="will-it-cancel-all-children-operations-if-i-cancel-parent-context">Will it cancel all children operations if I cancel parent context?</h3>
+
+<p>Yes, from above code snippet, you probably have the sense of it. Let’s read rest
+of <code class="language-plaintext highlighter-rouge">cancel(removeFromParent bool, err error)</code>.</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="p">(</span><span class="n">c</span> <span class="o">*</span><span class="n">cancelCtx</span><span class="p">)</span> <span class="n">cancel</span><span class="p">(</span><span class="n">removeFromParent</span> <span class="kt">bool</span><span class="p">,</span> <span class="n">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+  <span class="o">...</span>
+	<span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">done</span> <span class="o">==</span> <span class="no">nil</span> <span class="p">{</span>
+		<span class="n">c</span><span class="o">.</span><span class="n">done</span> <span class="o">=</span> <span class="n">closedchan</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nb">close</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">done</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">for</span> <span class="n">child</span> <span class="o">:=</span> <span class="k">range</span> <span class="n">c</span><span class="o">.</span><span class="n">children</span> <span class="p">{</span>
+		<span class="c">// NOTE: acquiring the child's lock while holding parent's lock.</span>
+		<span class="n">child</span><span class="o">.</span><span class="n">cancel</span><span class="p">(</span><span class="no">false</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="n">c</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="no">nil</span>
+	<span class="n">c</span><span class="o">.</span><span class="n">mu</span><span class="o">.</span><span class="n">Unlock</span><span class="p">()</span>
+
+	<span class="k">if</span> <span class="n">removeFromParent</span> <span class="p">{</span>
+		<span class="n">removeChild</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">Context</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>After current context is canceled, it’ll keep asking its children to cancel the
+operations. At 6th line, it iterates all children and send message to each one.
+Each of the child will do same as current context does.</p>
+
+<h3 id="how-is-scoped-data-stored">How is scoped data stored?</h3>
+
+<p>Key/value can be set by <code class="language-plaintext highlighter-rouge">WithValue(parent Context, key, val interface{}) Context</code>.</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="n">WithValue</span><span class="p">(</span><span class="n">parent</span> <span class="n">Context</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="k">interface</span><span class="p">{})</span> <span class="n">Context</span> <span class="p">{</span>
+  <span class="o">...</span>
+	<span class="k">return</span> <span class="o">&amp;</span><span class="n">valueCtx</span><span class="p">{</span><span class="n">parent</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">type</span> <span class="n">valueCtx</span> <span class="k">struct</span> <span class="p">{</span>
+	<span class="n">Context</span>
+	<span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="k">interface</span><span class="p">{}</span>
+<span class="p">}</span>
+
+<span class="k">func</span> <span class="p">(</span><span class="n">c</span> <span class="o">*</span><span class="n">valueCtx</span><span class="p">)</span> <span class="n">Value</span><span class="p">(</span><span class="n">key</span> <span class="k">interface</span><span class="p">{})</span> <span class="k">interface</span><span class="p">{}</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="n">key</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="n">c</span><span class="o">.</span><span class="n">val</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="n">c</span><span class="o">.</span><span class="n">Context</span><span class="o">.</span><span class="n">Value</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>OK, it’s a linked list (reverse linked list) you’ll see. Current
+node points to its parent. Actually all types of contexts, the underlying data
+structure is a reverse linked list, like <code class="language-plaintext highlighter-rouge">WithDeadline</code>, <code class="language-plaintext highlighter-rouge">WithTimeout</code>, <code class="language-plaintext highlighter-rouge">WithValue</code>.</p>
+
+<h3 id="thoughts">Thoughts?</h3>
+
+<ul>
+  <li>Why use linked list?</li>
+  <li>What’s the downside of using linked list?</li>
+  <li>Why <code class="language-plaintext highlighter-rouge">Context</code> is used to manage both life cycle and scoped data? Is this a good
+idea?</li>
+</ul>
+
+<h3 id="conclusion">Conclusion</h3>
+
+<p><code class="language-plaintext highlighter-rouge">Context</code> in Golang has three kinds of internal data type <code class="language-plaintext highlighter-rouge">emptyCtx</code>, <code class="language-plaintext highlighter-rouge">cancelCtx</code>,
+<code class="language-plaintext highlighter-rouge">valueCtx</code>, they serve different purposes and they all implement interface
+<code class="language-plaintext highlighter-rouge">Context</code>. <code class="language-plaintext highlighter-rouge">cancelCtx</code> derives new context and stores them as children, use
+<code class="language-plaintext highlighter-rouge">time.AfterFunc</code> to cancel an operation. Whereas, <code class="language-plaintext highlighter-rouge">valueCtx</code> derives new context
+and stores key/value pair on the new context object.</p>
+
+
+  

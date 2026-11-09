@@ -1,0 +1,71 @@
+{
+  "geometry": "geometry.glb",
+  "groups": {
+    "desk": {
+      "states": {
+        "on": {
+          "file": "lm_desk_on.jpg"
+        },
+        "off": {
+          "file": "lm_desk_off.jpg"
+        }
+      },
+      "exposure": 6.214862768200862
+    },
+    "pc": {
+      "states": {
+        "on": {
+          "file": "lm_pc_on.jpg"
+        },
+        "off": {
+          "file": "lm_pc_off.jpg"
+        }
+      },
+      "exposure": 3.9978563612785902
+    },
+    "crt": {
+      "states": {
+        "on": {
+          "file": "lm_crt_on.jpg"
+        },
+        "off": {
+          "file": "lm_crt_off.jpg"
+        }
+      },
+      "exposure": 3.532567507978799
+    },
+    "wall": {
+      "states": {
+        "on": {
+          "file": "lm_wall_on.jpg"
+        },
+        "off": {
+          "file": "lm_wall_off.jpg"
+        }
+      },
+      "exposure": 2.176739927651226
+    },
+    "props": {
+      "states": {
+        "on": {
+          "file": "lm_props_on.jpg"
+        },
+        "off": {
+          "file": "lm_props_off.jpg"
+        }
+      },
+      "exposure": 17.46630350748698
+    },
+    "kbd": {
+      "states": {
+        "on": {
+          "file": "lm_kbd_on.jpg"
+        },
+        "off": {
+          "file": "lm_kbd_off.jpg"
+        }
+      },
+      "exposure": 1.6892094543014748
+    }
+  }
+}

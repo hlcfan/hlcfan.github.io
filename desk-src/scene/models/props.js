@@ -1,5 +1,5 @@
 // Desk props: lamp, whisky glass, floppy, wall clock, keyboard,
-// speakers, CD-R in a paper sleeve. Built from boxes and canvas textures.
+// CD-R in a paper sleeve. Built from boxes and canvas textures.
 import {
   AdditiveBlending, BoxGeometry, Sprite, SpriteMaterial, CircleGeometry, CylinderGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial,
   MeshStandardMaterial, PlaneGeometry, SphereGeometry, CanvasTexture, SRGBColorSpace,
@@ -30,7 +30,7 @@ export function buildProps() {
 
   group.add(
     wall, win.group, lamp.group, glass, floppy, clock.group,
-    buildKeyboard(), buildSpeaker(-33), buildSpeaker(33), buildSleeve(),
+    buildKeyboard(), buildSleeve(),
   );
 
   group.userData.parts = {
@@ -146,20 +146,6 @@ function buildClock() {
       ctx.stroke();
     }
   }
-}
-
-function buildSpeaker(x) {
-  const group = new Group();
-  group.name = "speaker";
-  const body = new Mesh(new RoundedBoxGeometry(10, 18, 12, 3, 0.6), new MeshStandardMaterial({ color: 0xd2ccb9, roughness: 0.55 }));
-  body.position.y = 9;
-  const cone = new Mesh(new CircleGeometry(3.6, 24), new MeshStandardMaterial({ color: 0x1d1c18, roughness: 0.8 }));
-  cone.position.set(0, 7, 6.05);
-  const tweeter = new Mesh(new CircleGeometry(1.3, 16), new MeshStandardMaterial({ color: 0x2a2924, roughness: 0.6 }));
-  tweeter.position.set(0, 14, 6.05);
-  group.add(body, cone, tweeter);
-  group.position.set(x, 0, -4);
-  return group;
 }
 
 function buildSleeve() {

@@ -32,18 +32,27 @@ export function buildPC() {
   addOpticalDrive(front, drives, 0.4, "CD-RW  8x4x32");
   addFloppyDrive(front, drives, 3.9);
 
-  // Reset button, power button, LEDs on the right.
-  const reset = new Mesh(new CylinderGeometry(0.45, 0.45, 0.5, 20), buttonMaterial(0xb8b19b));
-  reset.rotation.x = Math.PI / 2;
-  reset.position.set(8, 3.4, 0.35);
-  front.add(reset);
-
+  // Power button and reset button on the right, each in a dark recessed plate. The power button
+  // is a rounded square that sticks out of its plate, with the power symbol printed on it.
+  const well = new MeshStandardMaterial({ color: 0x5c5746, roughness: 0.7 });
+  addBox(front, well, 3.2, 3.2, 0.3, 8, -1.2, 0.15);
   const powerMat = buttonMaterial(0xcfc8b2);
-  const power = new Mesh(new CylinderGeometry(0.9, 0.9, 0.9, 28), powerMat);
+  const power = new Mesh(new RoundedBoxGeometry(2.4, 2.4, 0.7, 3, 0.3), powerMat);
   power.name = "power-button";
-  power.rotation.x = Math.PI / 2;
   power.position.set(8, -1.2, 0.45);
+  const symbol = new Mesh(new PlaneGeometry(1.3, 1.3), new MeshBasicMaterial({ map: powerSymbol(), transparent: true, depthWrite: false }));
+  symbol.position.z = 0.36;
+  power.add(symbol);
   front.add(power);
+
+  const resetPlate = new Mesh(new CylinderGeometry(0.75, 0.75, 0.3, 24), well);
+  resetPlate.rotation.x = Math.PI / 2;
+  resetPlate.position.set(8, 3.4, 0.15);
+  const reset = new Mesh(new CylinderGeometry(0.4, 0.4, 0.5, 20), buttonMaterial(0xb8b19b));
+  reset.rotation.x = Math.PI / 2;
+  reset.position.set(8, 3.4, 0.3);
+  front.add(resetPlate, reset);
+  addDecal(front, labelTexture("RESET", 20), 2.2, 0.5, 8, 2.2, 0.32);
 
   const powerLed = addLed(front, 0xffa000, 12.5, 3.4);
   const hddLed = addLed(front, 0x20e050, 14.8, 3.4);
@@ -103,12 +112,28 @@ function addFloppyDrive(front, { x, trim, dark, recess }, y) {
   addBox(front, new MeshBasicMaterial({ color: 0x1d6b2c }), 0.4, 0.2, 0.1, x - 3.6, y - 0.75, 0.5);
 }
 
-function labelTexture(text) {
+function labelTexture(text, size = 22) {
   return drawTexture(256, 40, (ctx, w, h) => {
     ctx.fillStyle = "#3a382f";
-    ctx.font = "bold 22px Arial, sans-serif";
+    ctx.font = `bold ${size}px Arial, sans-serif`;
     ctx.textBaseline = "middle";
-    ctx.fillText(text, 6, h / 2);
+    ctx.fillText(text, size === 22 ? 6 : w / 2 - ctx.measureText(text).width / 2, h / 2);
+  });
+}
+
+// The IEC power symbol: an open circle with a vertical bar through the gap.
+function powerSymbol() {
+  return drawTexture(128, 128, (ctx, w, h) => {
+    ctx.strokeStyle = "#4a463c";
+    ctx.lineWidth = 11;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2 + 4, 34, -Math.PI / 2 + 0.6, -Math.PI / 2 - 0.6 + Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(w / 2, h / 2 - 40);
+    ctx.lineTo(w / 2, h / 2 - 6);
+    ctx.stroke();
   });
 }
 

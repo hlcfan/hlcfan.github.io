@@ -1,6 +1,6 @@
-// A 104-key beige keyboard: a wedge case and one merged mesh of tapered keycaps.
+// A 104-key beige keyboard: a wedge case, one merged mesh of tapered keycaps, and a cable to the PC.
 // Legends come from one canvas texture mapped flat over the key area.
-import { BoxGeometry, Float32BufferAttribute, Group, Mesh, MeshStandardMaterial } from "three";
+import { BoxGeometry, CatmullRomCurve3, Float32BufferAttribute, Group, Mesh, MeshStandardMaterial, TubeGeometry, Vector3 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { drawTexture } from "./canvas.js";
@@ -33,10 +33,24 @@ export function buildKeyboard() {
   const caps = new Mesh(capGeometry(keys, extent), capMaterial(keys, extent));
   caps.userData.bakeGroup = "kbd";
 
+  group.add(tilt, buildCable());
   tilt.add(body, caps);
-  group.add(tilt);
   group.position.set(-4, 0, 42);
   return group;
+}
+
+// The lead leaves the back of the case, drops to the desk and runs under the PC case front.
+function buildCable() {
+  const curve = new CatmullRomCurve3([
+    [0, 1.6, -7.4], [0.4, 0.8, -9.5], [2.5, 0.3, -12], [1.5, 0.3, -15],
+    [-1.5, 0.3, -18], [-3, 0.3, -21],
+  ].map((p) => new Vector3(...p)));
+  const cable = new Mesh(
+    new TubeGeometry(curve, 40, 0.25, 6),
+    new MeshStandardMaterial({ color: 0xc4bea9, roughness: 0.7 }),
+  );
+  cable.userData.bakeGroup = "kbd";
+  return cable;
 }
 
 // Each key is { x, y, w, h, label, mod } in key units, origin at the top left of the key area.

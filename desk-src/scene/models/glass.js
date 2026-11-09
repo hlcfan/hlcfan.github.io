@@ -20,9 +20,11 @@ export function buildGlass() {
     color: 0xdfeaf0, roughness: 0.04, metalness: 0, transparent: true, opacity: 0.12, side: DoubleSide, depthWrite: false,
   }));
 
-  const whiskyMaterial = new MeshStandardMaterial({ color: 0x9a6208, emissive: 0x4a2c00, roughness: 0.12 });
+  // Emissive carries most of the colour, so the whisky reads as light passing through it.
+  const whiskyMaterial = new MeshStandardMaterial({ color: 0xb8780c, emissive: 0xc48a0a, emissiveIntensity: 0.9, roughness: 0.1 });
+  const surfaceMaterial = new MeshStandardMaterial({ color: 0xe0b030, emissive: 0xeeb824, emissiveIntensity: 0.9, roughness: 0.05 });
   const whisky = new Mesh(lathe(POUR), whiskyMaterial);
-  const surface = new Mesh(new CircleGeometry(LEVEL_RADIUS - 0.02, SEGMENTS), whiskyMaterial);
+  const surface = new Mesh(new CircleGeometry(LEVEL_RADIUS - 0.02, SEGMENTS), surfaceMaterial);
   surface.rotation.x = -Math.PI / 2;
   surface.position.y = LEVEL;
 

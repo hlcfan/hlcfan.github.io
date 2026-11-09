@@ -34,7 +34,8 @@ test("an idle scene renders no frames once the ambient window has passed", async
     const orig = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = (cb) => { window.__raf++; return orig(cb); };
   });
-  await open(page);
+  // Not open(): that helper waits through the ambient window, and its own rAF calls would be counted.
+  await page.goto("/");
   await expect(page.locator("html.scene-on")).toHaveCount(1);
   const early = await page.evaluate(() => window.__raf);
   await page.waitForTimeout(600);

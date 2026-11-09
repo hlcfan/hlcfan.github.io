@@ -285,12 +285,13 @@ test("props and the plain list leave the idle scene alone: no frames when nothin
   expect(await page.evaluate(() => window.__raf)).toBe(before);
 });
 
-test("top right nav: Posts opens the plain list, About links to the about page", async ({ page }) => {
+test("top right nav: Posts links to /posts/, About links to the about page", async ({ page }) => {
   await page.goto("/");
   await page.locator(".scene-on").waitFor();
   await expect(page.locator("#nav-posts")).toBeVisible();
   await expect(page.getByRole("link", { name: "About" })).toHaveAttribute("href", "/about/");
+  await expect(page.locator("#nav-posts")).toHaveAttribute("href", "/posts/");
   await page.locator("#nav-posts").click();
-  await expect(page.locator("html.list-open")).toHaveCount(1);
+  await expect(page).toHaveURL(/\/posts\/$/);
   await expect(page.locator(".post-list")).toBeVisible();
 });

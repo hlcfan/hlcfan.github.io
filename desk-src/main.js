@@ -33,11 +33,9 @@ function saveDataOn() {
   return !!(navigator.connection && navigator.connection.saveData);
 }
 
-// "Skip to posts" and the Posts nav link show the plain list even when the scene is on.
+// "Skip to posts" shows the plain list even when the scene is on.
 function bindSkipLink() {
-  for (const id of ["skip-link", "nav-posts"]) {
-    document.getElementById(id)?.addEventListener("click", () => {
-      document.documentElement.classList.add("list-open");
-    });
-  }
+  document.getElementById("skip-link")?.addEventListener("click", () => {
+    document.documentElement.classList.add("list-open");
+  });
 }

@@ -2,3 +2,8 @@ _site
 .bundle
 .sass-cache
 .DS_Store
+assets/js/desk/
+node_modules/
+vendor/
+test-results/
+playwright-report/

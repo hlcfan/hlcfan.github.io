@@ -34,7 +34,7 @@ test("an idle scene renders no frames once the ambient window has passed", async
     const orig = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = (cb) => { window.__raf++; return orig(cb); };
   });
-  await page.goto("/");
+  await open(page);
   await expect(page.locator("html.scene-on")).toHaveCount(1);
   const early = await page.evaluate(() => window.__raf);
   await page.waitForTimeout(600);
@@ -74,7 +74,7 @@ test("dragging wakes the render loop", async ({ page }) => {
     const orig = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = (cb) => { window.__raf++; return orig(cb); };
   });
-  await page.goto("/");
+  await open(page);
   await expect(page.locator("html.scene-on")).toHaveCount(1);
   await page.waitForTimeout(QUIET_MS);
   const idle = await page.evaluate(() => window.__raf);
@@ -88,16 +88,36 @@ test("dragging wakes the render loop", async ({ page }) => {
 
 // ---- M2 and M3: terminal, power, focus --------------------------------------
 
+// The first frames compile shaders. On a software renderer that freezes the page for seconds, and
+// the freeze delays every timer. Tests that time the boot or the animations start after it.
+async function open(page, url = "/") {
+  await page.goto(url);
+  await page.locator("html.scene-on").waitFor({ timeout: 60000 });
+  await page.locator("html[data-bake]").waitFor({ state: "attached", timeout: 60000 });
+  await page.evaluate(() => new Promise((resolve) => {
+    let last = performance.now();
+    let calm = 0;
+    const tick = () => {
+      const now = performance.now();
+      calm = now - last < 100 ? calm + 1 : 0;
+      last = now;
+      if (calm >= 10) resolve();
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }));
+}
+
 const state = (page) => page.evaluate(() => document.documentElement.dataset.deskState);
 const layoutOf = (page) => page.evaluate(() => document.documentElement.dataset.deskLayout);
 const fast = (page) => page.addInitScript(() => localStorage.setItem("desk.booted", "1"));
 
 async function powerOn(page) {
-  await page.goto("/");
+  await open(page);
   await expect(page.locator("html.scene-on")).toHaveCount(1);
   await page.locator("#desk-power").focus();
   await page.keyboard.press("Enter");
-  await expect.poll(() => state(page), { timeout: 10000 }).toBe("READY");
+  await expect.poll(() => state(page), { timeout: 25000 }).toBe("READY");
 }
 
 async function run(page, line) {
@@ -116,7 +136,7 @@ test("desktop: power on, type ls posts/, see a post in the live region", async (
 });
 
 test("cold boot walks POWERING, POST, BOOTING, READY", async ({ page }) => {
-  await page.goto("/");
+  await open(page);
   await expect(page.locator("html.scene-on")).toHaveCount(1);
   expect(await state(page)).toBe("OFF");
   await page.locator("#desk-power").focus();
@@ -129,7 +149,7 @@ test("cold boot walks POWERING, POST, BOOTING, READY", async ({ page }) => {
 });
 
 test("a click during the boot skips to READY, but the power button halts", async ({ page }) => {
-  await page.goto("/");
+  await open(page);
   await expect(page.locator("html.scene-on")).toHaveCount(1);
   await page.locator("#desk-power").focus();
   await page.keyboard.press("Enter");
@@ -143,7 +163,7 @@ test("a click during the boot skips to READY, but the power button halts", async
 });
 
 test("a held key does not skip the boot it started", async ({ page }) => {
-  await page.goto("/");
+  await open(page);
   await expect(page.locator("html.scene-on")).toHaveCount(1);
   await page.locator("#desk-power").focus();
   await page.keyboard.down("Enter");
@@ -168,7 +188,7 @@ test("iPhone 13: 40 column layout, zoomed in, no horizontal scroll", async ({ br
 test("reduced motion goes straight to READY", async ({ browser }) => {
   const ctx = await browser.newContext({ reducedMotion: "reduce" });
   const page = await ctx.newPage();
-  await page.goto("/");
+  await open(page);
   await expect(page.locator("html.scene-on")).toHaveCount(1);
   await page.locator("#desk-power").focus();
   const t0 = Date.now();
@@ -180,14 +200,14 @@ test("reduced motion goes straight to READY", async ({ browser }) => {
 
 test("keyboard only: Tab order, Enter powers on, Esc moves focus to mute, machine stays READY", async ({ page }) => {
   await fast(page);
-  await page.goto("/");
+  await open(page);
   await expect(page.locator("html.scene-on")).toHaveCount(1);
   await page.keyboard.press("Tab");
   await expect(page.locator("#skip-link")).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.locator("#desk-power")).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect.poll(() => state(page), { timeout: 8000 }).toBe("READY");
+  await expect.poll(() => state(page), { timeout: 25000 }).toBe("READY");
   await page.keyboard.press("Tab");
   await expect(page.locator("#desk-input")).toBeFocused();
   await page.keyboard.type("echo hello | wc -l");
@@ -206,7 +226,7 @@ test("shutdown and reboot run through HALTING", async ({ page }) => {
   await powerOn(page);
   await run(page, "reboot");
   await expect.poll(() => state(page), { timeout: 4000 }).toMatch(/HALTING|OFF|POWERING/);
-  await expect.poll(() => state(page), { timeout: 8000 }).toBe("READY");
+  await expect.poll(() => state(page), { timeout: 25000 }).toBe("READY");
   await run(page, "shutdown");
   await expect.poll(() => state(page), { timeout: 4000 }).toBe("OFF");
 });
@@ -214,8 +234,8 @@ test("shutdown and reboot run through HALTING", async ({ page }) => {
 test("#cat=slug powers on by itself and prints the post", async ({ page }) => {
   await fast(page);
   await page.goto("/#cat=golang-context");
-  await expect.poll(() => state(page), { timeout: 8000 }).toBe("READY");
-  await expect(page.locator("[role=log]")).toContainText("context", { timeout: 8000, ignoreCase: true });
+  await expect.poll(() => state(page), { timeout: 25000 }).toBe("READY");
+  await expect(page.locator("[role=log]")).toContainText("context", { timeout: 25000, ignoreCase: true });
 });
 
 test("exit opens the plain list and the back button returns", async ({ page }) => {
@@ -241,7 +261,7 @@ test("grep -i searches the index through the terminal", async ({ page }) => {
   await fast(page);
   await powerOn(page);
   await run(page, "grep -i goroutine posts | head -n 2");
-  await expect(page.locator("[role=log]")).toContainText(".md:", { timeout: 8000 });
+  await expect(page.locator("[role=log]")).toContainText(".md:", { timeout: 25000 });
 });
 
 // ---- M6: props ---------------------------------------------------------------
@@ -254,7 +274,7 @@ async function clickPart(page, name) {
 test("lamp toggles, the floppy goes to GitHub", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("desk.test", "1"));
   await page.route("https://github.com/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>gh</title>" }));
-  await page.goto("/");
+  await open(page);
   await expect(page.locator("html.scene-on")).toHaveCount(1);
   await page.waitForFunction(() => !!window.__deskTest);
 
@@ -268,7 +288,7 @@ test("lamp toggles, the floppy goes to GitHub", async ({ page }) => {
   await expect(page.locator(`html[data-lamp=${first}]`)).toHaveCount(1);
 
   await clickPart(page, "floppy");
-  await page.waitForURL("https://github.com/hlcfan", { timeout: 5000 });
+  await page.waitForURL("https://github.com/hlcfan", { timeout: 20000 });
 });
 
 test("props and the plain list leave the idle scene alone: no frames when nothing happens", async ({ page }) => {
@@ -277,7 +297,7 @@ test("props and the plain list leave the idle scene alone: no frames when nothin
     const orig = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = (cb) => { window.__raf++; return orig(cb); };
   });
-  await page.goto("/");
+  await open(page);
   await expect(page.locator("html.scene-on")).toHaveCount(1);
   await page.waitForTimeout(QUIET_MS);
   const before = await page.evaluate(() => window.__raf);
@@ -286,7 +306,7 @@ test("props and the plain list leave the idle scene alone: no frames when nothin
 });
 
 test("top right nav: Posts links to /posts/, About links to the about page", async ({ page }) => {
-  await page.goto("/");
+  await open(page);
   await page.locator(".scene-on").waitFor();
   await expect(page.locator("#nav-posts")).toBeVisible();
   await expect(page.getByRole("link", { name: "About" })).toHaveAttribute("href", "/about/");

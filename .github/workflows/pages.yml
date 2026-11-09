@@ -31,8 +31,6 @@ jobs:
       - run: npm run build
       - run: npm run size
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test e2e/probe.spec.js --retries=0
-        continue-on-error: true
       - run: npm run e2e
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - run: bundle exec jekyll build

@@ -185,7 +185,6 @@ export async function startDesk(canvas, { onFatal }) {
     scene.parts.glow.material.opacity = glow;
     if (bake) scene.lights.screen.intensity = glow * SCREEN_LIGHT;
     updateLeds(now);
-    animateSteam(now);
     animateFloppy(now);
   }
 
@@ -402,17 +401,6 @@ export async function startDesk(canvas, { onFatal }) {
     ambient.setLamp(on);
     scene.invalidate();
     bake.setLamp(on).then(() => scene.invalidate());
-  }
-
-  // Wisps rise from the mug. Driven by the clock, so they stop when the loop idles.
-  function animateSteam(now) {
-    const active = !reduced && now - lastInput < ACTIVE_WINDOW_MS;
-    for (const w of scene.parts.mugSteam) {
-      const t = (now / 4000 + w.userData.phase) % 1;
-      w.position.set(Math.sin(t * 6 + w.userData.phase * 10) * 1.2, 9 + t * 14, 0.5);
-      w.scale.setScalar(1 + t * 1.2);
-      w.material.opacity = active ? (1 - t) * 0.45 : 0;
-    }
   }
 
   // The floppy flies to the drive slot, then the page goes to GitHub.

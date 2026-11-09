@@ -1,11 +1,12 @@
-// Desk props: lamp, mug, floppy, wall clock, keyboard,
+// Desk props: lamp, whisky glass, floppy, wall clock, keyboard,
 // speakers, CD-R in a paper sleeve. Built from boxes and canvas textures.
 import {
   AdditiveBlending, BoxGeometry, Sprite, SpriteMaterial, CircleGeometry, CylinderGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial,
-  MeshStandardMaterial, PlaneGeometry, SphereGeometry, TorusGeometry, CanvasTexture, SRGBColorSpace,
+  MeshStandardMaterial, PlaneGeometry, SphereGeometry, CanvasTexture, SRGBColorSpace,
 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { drawTexture, rng } from "./canvas.js";
+import { buildGlass } from "./glass.js";
 import { buildKeyboard } from "./keyboard.js";
 
 export function buildProps() {
@@ -14,8 +15,8 @@ export function buildProps() {
 
   const lamp = buildLamp();
   lamp.group.position.set(-72, 0, -16);
-  const mug = buildMug();
-  mug.group.position.set(48, 0, 14);
+  const glass = buildGlass();
+  glass.position.set(48, 0, 14);
   const floppy = buildFloppy();
   floppy.position.set(46, 0.4, 36);
   floppy.rotation.y = -0.35;
@@ -28,12 +29,12 @@ export function buildProps() {
   wall.userData.bakeGroup = "wall";
 
   group.add(
-    wall, win.group, lamp.group, mug.group, floppy, clock.group,
+    wall, win.group, lamp.group, glass, floppy, clock.group,
     buildKeyboard(), buildSpeaker(-33), buildSpeaker(33), buildSleeve(),
   );
 
   group.userData.parts = {
-    lamp: lamp.group, lampBulb: lamp.bulb, lampHead: lamp.head, mugSteam: mug.steam,
+    lamp: lamp.group, lampBulb: lamp.bulb, lampHead: lamp.head,
     floppy, clock, wall, rain: win.rain, lampGlow: lamp.glow,
   };
   return group;
@@ -68,41 +69,6 @@ function buildLamp() {
   glow.renderOrder = 4;
   head.add(glow);
   return { group, bulb, head, glow };
-}
-
-function buildMug() {
-  const group = new Group();
-  group.name = "mug";
-  const white = new MeshStandardMaterial({ color: 0xe8e4d8, roughness: 0.35 });
-  const body = new Mesh(new CylinderGeometry(4.2, 3.8, 9, 28, 1, true), new MeshStandardMaterial({ color: 0xe8e4d8, roughness: 0.35, side: DoubleSide }));
-  body.position.y = 4.5;
-  const bottom = new Mesh(new CircleGeometry(3.8, 28), white);
-  bottom.rotation.x = -Math.PI / 2;
-  bottom.position.y = 0.05;
-  const coffee = new Mesh(new CircleGeometry(4, 28), new MeshStandardMaterial({ color: 0x2b1a10, roughness: 0.2 }));
-  coffee.rotation.x = -Math.PI / 2;
-  coffee.position.y = 7.6;
-  const handle = new Mesh(new TorusGeometry(2.6, 0.55, 8, 20, Math.PI * 1.2), white);
-  handle.position.set(4.2, 4.5, 0);
-  handle.rotation.z = -Math.PI * 0.6;
-
-  // Three faint wisps. desk.js moves them from the clock, so they freeze when the loop idles.
-  const steam = [];
-  const tex = drawTexture(64, 64, (ctx, w, h) => {
-    const g = ctx.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2);
-    g.addColorStop(0, "rgba(255,255,255,0.55)");
-    g.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
-  });
-  for (let i = 0; i < 3; i++) {
-    const m = new Mesh(new PlaneGeometry(5, 5), new MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, blending: AdditiveBlending, opacity: 0 }));
-    m.userData.phase = i / 3;
-    steam.push(m);
-    group.add(m);
-  }
-  group.add(body, bottom, coffee, handle);
-  return { group, steam };
 }
 
 function buildFloppy() {

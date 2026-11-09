@@ -43,6 +43,7 @@ export function buildCRT() {
 
   const screen = new Mesh(curvedGlass(SCREEN.w, SCREEN.h, 0.8), glassMaterial());
   screen.name = "screen";
+  screen.userData.noBake = true; // the glass reacts only to the live screen light
   screen.position.set(0, cy + 1.5, 19.3);
   group.add(screen);
 
@@ -103,18 +104,24 @@ function curvedGlass(w, h, bulge) {
 }
 
 function glassMaterial() {
-  return new MeshStandardMaterial({ color: 0x050808, roughness: 0.12, metalness: 0.0, envMapIntensity: 0.6 });
+  // Unlit on purpose. A lit glass picks up the live screen light and turns grey in front of the picture.
+  return new MeshBasicMaterial({ color: 0x040606 });
 }
 
-// Transparent over the glass itself, brightest just outside it, fading outward.
+// A soft rim around the glass. The glass area itself stays clear, so the halo never tints the picture.
 function glowTexture() {
   return drawTexture(256, 212, (ctx, w, h) => {
-    const g = ctx.createRadialGradient(w / 2, h / 2, w * 0.2, w / 2, h / 2, w * 0.5);
-    g.addColorStop(0, "rgba(150,200,255,0)");
-    g.addColorStop(0.45, "rgba(150,200,255,0.5)");
-    g.addColorStop(1, "rgba(150,200,255,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
+    const iw = (SCREEN.w / 58) * w;
+    const ih = (SCREEN.h / 48) * h;
+    const x = (w - iw) / 2;
+    const y = (h - ih) / 2;
+    ctx.shadowColor = "rgba(150,200,255,0.9)";
+    ctx.shadowBlur = 34;
+    ctx.fillStyle = "rgba(150,200,255,1)";
+    ctx.fillRect(x, y, iw, ih);
+    ctx.shadowBlur = 0;
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillRect(x, y, iw, ih);
   });
 }
 

@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
 const dir = "assets/js/desk";
-const budgets = { loader: 5 * 1024, scene: 200 * 1024 };
+const budgets = { loader: 5 * 1024, scene: 220 * 1024 };
 const files = readdirSync(dir).filter((f) => f.endsWith(".js"));
 let failed = false;
 

@@ -1,5 +1,5 @@
 // The desk, the cutting mat, and the fake contact shadows used under objects.
-import { BoxGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry } from "three";
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, NoColorSpace, PlaneGeometry } from "three";
 import { drawTexture, rng } from "./canvas.js";
 
 export function buildDesk() {
@@ -8,14 +8,14 @@ export function buildDesk() {
 
   const top = new Mesh(
     new BoxGeometry(260, 4, 150),
-    new MeshStandardMaterial({ map: woodTexture(), roughness: 0.7 }),
+    woodMaterial(),
   );
   top.position.set(0, -2, 0);
   group.add(top);
 
   const mat = new Mesh(
     new BoxGeometry(92, 0.3, 56),
-    new MeshStandardMaterial({ color: 0x244a38, roughness: 0.85 }),
+    new MeshStandardMaterial({ color: 0x2c4a44, roughness: 0.85 }),
   );
   mat.position.set(0, 0.15, 4);
   group.add(mat);
@@ -39,6 +39,15 @@ export function buildContactShadow(width, depth, opacity = 0.55) {
   mesh.rotation.x = -Math.PI / 2;
   mesh.renderOrder = -1;
   return mesh;
+}
+
+// Grain drives color, bump, and roughness, so the lamp light catches the wood unevenly.
+function woodMaterial() {
+  const map = woodTexture();
+  const rough = map.clone();
+  rough.colorSpace = NoColorSpace;
+  rough.needsUpdate = true;
+  return new MeshStandardMaterial({ map, bumpMap: rough, bumpScale: 0.6, roughnessMap: rough, roughness: 1 });
 }
 
 function woodTexture() {

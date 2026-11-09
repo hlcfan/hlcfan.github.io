@@ -18,6 +18,9 @@ test("without WebGL2 the plain list stays visible", async ({ page }) => {
   await expect(page.locator(".post-list a").first()).toBeVisible();
 });
 
+// Rain, dust and camera sway run for 10 s after load or input (ACTIVE_WINDOW_MS), then the scene goes quiet.
+const QUIET_MS = 11000;
+
 test("existing URLs still resolve", async ({ request }) => {
   for (const url of ["/about/", "/domains/", "/category/tech.html", "/feed.xml", "/assets/main.css"]) {
     const res = await request.get(url);
@@ -25,7 +28,7 @@ test("existing URLs still resolve", async ({ request }) => {
   }
 });
 
-test("an idle scene renders no frames", async ({ page }) => {
+test("an idle scene renders no frames once the ambient window has passed", async ({ page }) => {
   await page.addInitScript(() => {
     window.__raf = 0;
     const orig = window.requestAnimationFrame.bind(window);
@@ -33,7 +36,10 @@ test("an idle scene renders no frames", async ({ page }) => {
   });
   await page.goto("/");
   await expect(page.locator("html.scene-on")).toHaveCount(1);
-  await page.waitForTimeout(500);
+  const early = await page.evaluate(() => window.__raf);
+  await page.waitForTimeout(600);
+  expect(await page.evaluate(() => window.__raf), "ambient life right after load").toBeGreaterThan(early);
+  await page.waitForTimeout(QUIET_MS);
   const before = await page.evaluate(() => window.__raf);
   await page.waitForTimeout(1000);
   expect(await page.evaluate(() => window.__raf)).toBe(before);
@@ -70,7 +76,7 @@ test("dragging wakes the render loop", async ({ page }) => {
   });
   await page.goto("/");
   await expect(page.locator("html.scene-on")).toHaveCount(1);
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(QUIET_MS);
   const idle = await page.evaluate(() => window.__raf);
   await page.mouse.move(640, 300);
   await page.mouse.down();
@@ -252,10 +258,14 @@ test("lamp toggles, the floppy goes to GitHub", async ({ page }) => {
   await expect(page.locator("html.scene-on")).toHaveCount(1);
   await page.waitForFunction(() => !!window.__deskTest);
 
+  // The bake decides the first lamp state: on with lightmaps, off without. Wait for it, then flip twice.
+  await page.waitForSelector("html[data-bake]");
+  const first = await page.evaluate(() => document.documentElement.dataset.lamp ?? "off");
+  const flipped = first === "on" ? "off" : "on";
   await clickPart(page, "lamp");
-  await expect(page.locator("html[data-lamp=on]")).toHaveCount(1);
+  await expect(page.locator(`html[data-lamp=${flipped}]`)).toHaveCount(1);
   await clickPart(page, "lamp");
-  await expect(page.locator("html[data-lamp=off]")).toHaveCount(1);
+  await expect(page.locator(`html[data-lamp=${first}]`)).toHaveCount(1);
 
   await clickPart(page, "floppy");
   await page.waitForURL("https://github.com/hlcfan", { timeout: 5000 });
@@ -269,7 +279,7 @@ test("props and the plain list leave the idle scene alone: no frames when nothin
   });
   await page.goto("/");
   await expect(page.locator("html.scene-on")).toHaveCount(1);
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(QUIET_MS);
   const before = await page.evaluate(() => window.__raf);
   await page.waitForTimeout(1500);
   expect(await page.evaluate(() => window.__raf)).toBe(before);

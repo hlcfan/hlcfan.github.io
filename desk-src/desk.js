@@ -2,6 +2,8 @@
 // terminal session, audio and accessibility controls.
 import { Box3, Vector3 } from "three";
 import { createScene, DEMAND } from "./scene/scene.js";
+import { createAmbient } from "./scene/ambient.js";
+import { loadBake } from "./scene/bake-load.js";
 import { buildScreenOverlay } from "./scene/models/crt.js";
 import { createPower, powerCurve, S } from "./power.js";
 import { biosFrame, blankFrame, bootFrame, haltFrame } from "./boot-script.js";
@@ -21,9 +23,11 @@ const ACTIVE_WINDOW_MS = 10000;
 const GITHUB_URL = "https://github.com/hlcfan";
 const FLOPPY_MS = 900;
 const SLOT = { x: -9, y: 10.2, z: 21.6 };
+const SCREEN_LIGHT = 700;
 const LED = { amber: 0xffa000, green: 0x30ff40, hddOn: 0x30ff60, hddOff: 0x103a1c };
 
 export async function startDesk(canvas, { onFatal }) {
+  let bake = null;
   const root = document.documentElement;
   const base = root.dataset.base ?? "";
   const local = safeStorage("localStorage");
@@ -32,6 +36,7 @@ export async function startDesk(canvas, { onFatal }) {
   const muteButton = document.getElementById("desk-mute");
 
   const scene = createScene(canvas, { onFatal, reducedMotion: reduced });
+  const ambient = createAmbient({ scene: scene.scene, parts: scene.parts, reduced });
   const audio = createAudio({ storage: local });
   const power = createPower({ reducedMotion: reduced, isFast: () => local.get("desk.booted") === "1" });
   const screen = createScreenCanvas();
@@ -96,6 +101,7 @@ export async function startDesk(canvas, { onFatal }) {
   content.loadPosts().then((posts) => session.setPosts(posts)).catch(() => {});
 
   await scene.firstFrame();
+  applyBake();
   if (local.get("desk.test") === "1") window.__deskTest = { point: pointOf };
   if (pendingCat) power.powerOnFast();
   return { scene, power, term, session };
@@ -175,7 +181,9 @@ export async function startDesk(canvas, { onFatal }) {
       lastSample = now;
       brightness = sampleBrightness();
     }
-    scene.parts.glow.material.opacity = Math.min(0.6, brightness * u.uPower.value * 2.4);
+    const glow = Math.min(0.6, brightness * u.uPower.value * 2.4);
+    scene.parts.glow.material.opacity = glow;
+    if (bake) scene.lights.screen.intensity = glow * SCREEN_LIGHT;
     updateLeds(now);
     animateSteam(now);
     animateFloppy(now);
@@ -213,10 +221,15 @@ export async function startDesk(canvas, { onFatal }) {
     return frame;
   }
 
+  // Ambient life (rain, dust, camera sway) runs for 10 s after the page loads or the visitor acts,
+  // in any power state. After that the scene goes quiet again.
   function demand(dt, now) {
-    if (power.animating || inserting) return DEMAND.FULL;
-    if (power.state === S.READY && now - lastInput < ACTIVE_WINDOW_MS) return DEMAND.SLOW;
-    return DEMAND.NONE;
+    const active = !reduced && now - lastInput < ACTIVE_WINDOW_MS;
+    scene.setBreathing(active);
+    const moved = ambient.update(now, dt, active);
+    if (power.animating || inserting || ambient.swinging) return DEMAND.FULL;
+    if (active || (power.state === S.READY && now - lastInput < ACTIVE_WINDOW_MS)) return DEMAND.SLOW;
+    return moved ? DEMAND.SLOW : DEMAND.NONE;
   }
 
   // Height of the glass on the display in device pixels. The shader sizes scanlines from it.
@@ -370,11 +383,25 @@ export async function startDesk(canvas, { onFatal }) {
   // ---- props -------------------------------------------------------------
 
   function toggleLamp() {
-    const on = scene.lights.lamp.intensity === 0;
-    scene.lights.lamp.intensity = on ? 900 : 0;
-    scene.parts.lampBulb.material.emissiveIntensity = on ? 1.6 : 0;
+    const on = bake ? root.dataset.lamp !== "on" : scene.lights.lamp.intensity === 0;
+    ambient.kickLamp();
+    if (bake) setLamp(on);
+    else {
+      scene.lights.lamp.intensity = on ? 900 : 0;
+      scene.parts.lampBulb.material.emissiveIntensity = on ? 1.6 : 0;
+      root.dataset.lamp = on ? "on" : "off";
+      ambient.setLamp(on);
+      scene.invalidate();
+    }
+  }
+
+  // With the bake, the lamp is a lightmap swap. The bulb glow follows at once.
+  function setLamp(on) {
     root.dataset.lamp = on ? "on" : "off";
+    scene.parts.lampBulb.material.emissiveIntensity = on ? 1.6 : 0;
+    ambient.setLamp(on);
     scene.invalidate();
+    bake.setLamp(on).then(() => scene.invalidate());
   }
 
   // Wisps rise from the mug. Driven by the clock, so they stop when the loop idles.
@@ -416,6 +443,21 @@ export async function startDesk(canvas, { onFatal }) {
   }
 
   // ---- page controls -----------------------------------------------------
+
+  // Lightmaps arrive after the first frame. Until then, and on any failure, the flat scene stays.
+  function applyBake() {
+    const { parts, lights } = scene;
+    const roots = [parts.desk, parts.pc, parts.crt, parts.props];
+    loadBake({ roots, base }).then((result) => {
+      root.dataset.bake = result ? "on" : "none";
+      if (!result) return;
+      bake = result;
+      parts.caseShadow.visible = false;
+      lights.key.intensity = 0.15;
+      lights.hemi.intensity = 0.05;
+      setLamp(true);
+    });
+  }
 
   function bindMute() {
     const update = (muted) => {

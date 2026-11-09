@@ -4,6 +4,7 @@
   "scripts": {
     "build": "rm -rf assets/js/desk && esbuild desk-src/main.js --bundle --splitting --minify --format=esm --target=es2020 --legal-comments=eof --outdir=assets/js/desk",
     "dev": "rm -rf assets/js/desk && esbuild desk-src/main.js --bundle --splitting --format=esm --target=es2020 --sourcemap --watch --outdir=assets/js/desk",
+    "bake": "node tools/bake/export.mjs && ${BLENDER:-/Applications/Blender.app/Contents/MacOS/Blender} -b -P tools/bake/bake.py -- tools/bake/out/scene.glb tools/bake/out/meta.json assets/desk/bake 256 1024",
     "size": "node scripts/size.js",
     "test": "vitest run --passWithNoTests",
     "e2e": "playwright test"

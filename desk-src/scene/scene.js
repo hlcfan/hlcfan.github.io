@@ -5,6 +5,7 @@ import { createCameraRig } from "./camera.js";
 import { createFrameMeter, createLoop } from "./loop.js";
 import { setupLighting } from "./lighting.js";
 import { createPicker } from "./picking.js";
+import { createPost } from "./post.js";
 import { buildCRT } from "./models/crt.js";
 import { buildContactShadow, buildDesk } from "./models/desk.js";
 import { buildPC, CASE } from "./models/pc.js";
@@ -31,10 +32,13 @@ export function createScene(canvas, { onFatal = () => {}, reducedMotion = false 
   const hooks = { tap: () => {}, hover: () => {}, resize: () => {} };
   let pixelRatio = Math.min(devicePixelRatio, budget.maxRatio);
   let wakeTimer = 0;
+  let breathing = false;
+  const restPosition = new Vector3();
 
   const rig = createCameraRig(camera, { invalidate: () => loop.invalidate(), reducedMotion });
   const loop = createLoop({ update, render, onFrameCost });
   const lights = setupLighting(scene, renderer);
+  const post = createPost(renderer, scene, camera);
   const parts = buildWorld();
   const picker = createPicker(camera, canvas, {
     "power-button": parts.powerButton,
@@ -59,6 +63,7 @@ export function createScene(canvas, { onFatal = () => {}, reducedMotion = false 
     onHover: (fn) => (hooks.hover = fn),
     onResize: (fn) => (hooks.resize = fn),
     setPowerHighlight,
+    setBreathing: (on) => { breathing = on; },
     setCursor: (c) => { canvas.style.cursor = c; },
     firstFrame,
     get pixelRatio() { return pixelRatio; },
@@ -75,7 +80,7 @@ export function createScene(canvas, { onFatal = () => {}, reducedMotion = false 
     const caseShadow = buildContactShadow(CASE.w + 14, CASE.d + 14);
     caseShadow.position.set(0, 0.35, 0);
     scene.add(desk, caseShadow, pc, crt, props);
-    return { ...pc.userData.parts, ...crt.userData.parts, ...props.userData.parts, pc, crt, desk, props };
+    return { ...pc.userData.parts, ...crt.userData.parts, ...props.userData.parts, pc, crt, desk, props, caseShadow };
   }
 
   // Runs the rig and every ticker. Tells the loop how fast to go, or to stop.
@@ -96,14 +101,26 @@ export function createScene(canvas, { onFatal = () => {}, reducedMotion = false 
 
   function render() {
     for (const fn of beforeRender) fn(renderer);
-    renderer.render(scene, camera);
+    if (breathing) sway();
+    post.render();
+    if (breathing) camera.position.copy(restPosition);
+  }
+
+  // A slow, tiny drift of the camera, so a still room does not look frozen. Undone after each frame.
+  function sway() {
+    const t = performance.now() / 1000;
+    restPosition.copy(camera.position);
+    camera.position.x += Math.sin(t * 0.55) * 0.14;
+    camera.position.y += Math.sin(t * 0.41 + 1) * 0.1;
+    camera.updateMatrixWorld();
   }
 
   function onFrameCost(ms) {
-    if (meter.push(ms) && pixelRatio > 1) {
-      pixelRatio = Math.max(1, pixelRatio - 0.25);
-      resize();
-    }
+    if (!meter.push(ms)) return;
+    if (post.bloom) post.setBloom(false); // bloom goes first, then resolution
+    else if (pixelRatio > 1) pixelRatio = Math.max(1, pixelRatio - 0.25);
+    else return;
+    resize();
   }
 
   function resize() {
@@ -111,6 +128,7 @@ export function createScene(canvas, { onFatal = () => {}, reducedMotion = false 
     const h = canvas.clientHeight || innerHeight;
     renderer.setPixelRatio(pixelRatio);
     renderer.setSize(w, h, false);
+    post.setSize(w, h, pixelRatio);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     rig.resize(camera.aspect);

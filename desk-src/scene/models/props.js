@@ -1,4 +1,4 @@
-// Desk props: lamp, mug, floppy, wall clock, keyboard, mouse,
+// Desk props: lamp, mug, floppy, wall clock, keyboard,
 // speakers, CD-R in a paper sleeve. Built from boxes and canvas textures.
 import {
   AdditiveBlending, BoxGeometry, Sprite, SpriteMaterial, CircleGeometry, CylinderGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial,
@@ -6,6 +6,7 @@ import {
 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { drawTexture, rng } from "./canvas.js";
+import { buildKeyboard } from "./keyboard.js";
 
 // Where dust drifts in the lamp light, in world cm.
 const LAMP_DUST_BOX = { min: [-72, 6, -16], max: [-30, 36, 10] };
@@ -31,7 +32,7 @@ export function buildProps() {
 
   group.add(
     wall, win.group, lamp.group, mug.group, floppy, clock.group,
-    buildKeyboard(), buildMouse(), buildSpeaker(-33), buildSpeaker(33), buildSleeve(),
+    buildKeyboard(), buildSpeaker(-33), buildSpeaker(33), buildSleeve(),
   );
 
   group.userData.parts = {
@@ -182,53 +183,6 @@ function buildClock() {
       ctx.stroke();
     }
   }
-}
-
-function buildKeyboard() {
-  const group = new Group();
-  group.name = "keyboard";
-  const body = new Mesh(new RoundedBoxGeometry(46, 2.6, 16, 3, 0.5), new MeshStandardMaterial({ color: 0xd2ccb9, roughness: 0.6 }));
-  body.position.y = 1.3;
-  const keys = new Mesh(
-    new PlaneGeometry(42, 12),
-    new MeshStandardMaterial({
-      roughness: 0.6,
-      map: drawTexture(512, 150, (ctx, w, h) => {
-        ctx.fillStyle = "#bdb7a3";
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = "#e4dfcd";
-        ctx.strokeStyle = "#8d8776";
-        for (let r = 0; r < 5; r++) {
-          const n = r === 4 ? 1 : 15 - (r === 2 ? 1 : 0);
-          for (let c = 0; c < n; c++) {
-            const kw = r === 4 ? 260 : w / 15 - 3;
-            const x = r === 4 ? 100 : c * (w / 15) + 2;
-            ctx.fillRect(x, 6 + r * 28, kw, 24);
-            ctx.strokeRect(x, 6 + r * 28, kw, 24);
-          }
-        }
-      }),
-    }),
-  );
-  keys.rotation.x = -Math.PI / 2 + 0.08;
-  keys.position.set(0, 2.65, -0.5);
-  group.add(body, keys);
-  group.position.set(-4, 0, 42);
-  return group;
-}
-
-function buildMouse() {
-  const group = new Group();
-  group.name = "mouse";
-  const body = new Mesh(new SphereGeometry(3, 20, 14), new MeshStandardMaterial({ color: 0xd2ccb9, roughness: 0.5 }));
-  body.scale.set(1, 0.55, 1.5);
-  body.position.y = 1.6;
-  const cable = new Mesh(new CylinderGeometry(0.2, 0.2, 14, 6), new MeshStandardMaterial({ color: 0xc4bea9 }));
-  cable.rotation.x = Math.PI / 2;
-  cable.position.set(0, 0.3, -9);
-  group.add(body, cable);
-  group.position.set(30, 0, 40);
-  return group;
 }
 
 function buildSpeaker(x) {
